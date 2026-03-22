@@ -1,0 +1,45 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Águia Esportes</title>
+
+<link rel="stylesheet" href="style.css">
+<link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;500;700;800&display=swap" rel="stylesheet">
+</head>
+
+<body>
+    <div id="loader">
+    <img src="logo-aguia.png" alt="Logo Águia Esportes" class="loader-logo">
+</div>
+
+<header id="header">
+    <div class="logo-area">
+        <img src="logo-aguia.png" alt="Logo Águia Esportes" class="logo-img">
+        <div class="logo-texto">
+            <span class="logo-nome">Águia Esportes</span>
+            <span class="logo-sub">Força • Disciplina • Evolução</span>
+        </div>
+    </div>
+
+    <nav>
+        <a onclick="mostrarInicio()">Início</a>
+        <a onclick="mostrarModalidades()">Modalidades</a>
+        <a onclick="mostrarLogin()">Login</a>
+
+        <button class="btn-destaque" onclick="mostrarEscolhaModalidadeExperimental()">
+            🔥 Aula Experimental
+        </button>
+    </nav>
+</header>
+
+<div id="conteudo"></div>
+
+<footer>
+    <p>© 2026 Águia Esportes • Todos os direitos reservados</p>
+</footer>
+
+<script src="script.js"></script>
+</body>
+</html>
