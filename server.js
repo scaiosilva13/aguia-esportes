@@ -66,6 +66,24 @@ const Horario = mongoose.model("Horario", {
 // 📥 ROTAS
 // =============================
 
+app.get("/teste-banco", async (req, res) => {
+    try {
+        const usuarios = await Usuario.find().limit(5);
+        res.json({
+            sucesso: true,
+            mensagem: "Banco conectado com sucesso!",
+            totalEncontrado: usuarios.length,
+            usuarios
+        });
+    } catch (erro) {
+        res.status(500).json({
+            sucesso: false,
+            mensagem: "Erro ao consultar banco",
+            erro: erro.message
+        });
+    }
+});
+
 // Cadastro de aluno
 app.post("/cadastro", async (req, res) => {
     const novoAluno = new Aluno({
