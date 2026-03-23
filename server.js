@@ -243,9 +243,32 @@ app.post("/cancelar-agendamento-aula-experimental", async (req, res) => {
     res.send("Agendamento cancelado com sucesso!");
 });
 
+app.get("/painel-teste", async (req, res) => {
+    try {
+        const usuarios = await Usuario.find();
+        const horarios = await Horario.find();
+        const aulas = await AulaExperimental.find();
+        const agendamentos = await AgendamentoExperimental.find();
+
+        res.json({
+            usuarios,
+            horarios,
+            aulasExperimentais: aulas,
+            agendamentos
+        });
+
+    } catch (erro) {
+        res.status(500).json({
+            erro: "Erro ao carregar dados",
+            detalhe: erro.message
+        });
+    }
+});
+
 // =============================
 // 🚀 INICIAR SERVIDOR
 // =============================
 app.listen(port, () => {
     console.log("Servidor rodando em http://localhost:3000");
 });
+
