@@ -1,4 +1,5 @@
 require("dotenv").config();
+const bcrypt = require("bcrypt");
 const express = require("express");
 const mongoose = require("mongoose");
 
@@ -138,37 +139,56 @@ app.post("/agendar-aula-experimental", async (req, res) => {
 
 // Cadastro de usuário
 app.post("/registrar", async (req, res) => {
-    let tipo = "aluno";
+    try {
+        let tipo = "aluno";
 
-    if (req.body.email === "admin@aguia.com") {
-        tipo = "admin";
+        if (req.body.email === "admin@aguia.com") {
+            tipo = "admin";
+        }
+
+        const senhaCriptografada = await bcrypt.hash(req.body.senha, 10);
+
+        const novoUsuario = new Usuario({
+            email: req.body.email,
+            senha: senhaCriptografada,
+            tipo: tipo
+        });
+
+        await novoUsuario.save();
+        res.send("Usuário registrado com sucesso!");
+    } catch (erro) {
+        res.status(500).send("Erro ao registrar usuário.");
     }
-
-    const novoUsuario = new Usuario({
-        email: req.body.email,
-        senha: req.body.senha,
-        tipo: tipo
-    });
-
-    await novoUsuario.save();
-    res.send("Usuário registrado com sucesso!");
 });
 
 // Login
 app.post("/login", async (req, res) => {
-    const usuario = await Usuario.findOne({
-        email: req.body.email,
-        senha: req.body.senha
-    });
-
-    if (usuario) {
-        res.json({
-            sucesso: true,
-            email: usuario.email,
-            tipo: usuario.tipo
+    try {
+        const usuario = await Usuario.findOne({
+            email: req.body.email
         });
-    } else {
-        res.json({
+
+        if (!usuario) {
+            return res.json({
+                sucesso: false
+            });
+        }
+
+        const senhaCorreta = await bcrypt.compare(req.body.senha, usuario.senha);
+
+        if (senhaCorreta) {
+            res.json({
+                sucesso: true,
+                email: usuario.email,
+                tipo: usuario.tipo
+            });
+        } else {
+            res.json({
+                sucesso: false
+            });
+        }
+    } catch (erro) {
+        res.status(500).json({
             sucesso: false
         });
     }
