@@ -1,3 +1,5 @@
+let origemModalidade = "modalidades";
+
 // Função utilitária para trocar conteúdo
 function trocarConteudo(html, aplicarAnimacao = true) {
     const conteudo = document.getElementById("conteudo");
@@ -35,12 +37,17 @@ function mostrarInicio() {
 
             <div class="hero-botoes">
                 <button onclick="mostrarEscolhaModalidadeExperimental()" class="btn-principal">
-                    🔥 Marque agora sua aula experimental
-                </button>
+                🔥 Marque agora sua aula experimental
+            </button>
 
                 <button onclick="mostrarModalidades()" class="btn-secundario">
-                    Ver modalidades
+                Ver modalidades
                 </button>
+            </div>
+
+            <div class="indicador-scroll" onclick="rolarParaConteudo()">
+                <span>Role para explorar</span>
+                <div class="seta-scroll">⌄</div>
             </div>
         </div>
     </section>
@@ -74,22 +81,22 @@ function mostrarInicio() {
         </p>
 
         <div class="cards">
-            <div class="card" onclick="mostrarDetalheModalidade('Ginástica')">
+            <div class="card" onclick="abrirModalidadePelaHome('Ginástica')">
                 <h3>Ginástica</h3>
                 <p>Controle corporal, mobilidade e base técnica.</p>
             </div>
 
-            <div class="card" onclick="mostrarDetalheModalidade('Calistenia')">
+            <div class="card" onclick="abrirModalidadePelaHome('Calistenia')">
                 <h3>Calistenia</h3>
                 <p>Força com peso corporal e progressão técnica.</p>
             </div>
 
-            <div class="card" onclick="mostrarDetalheModalidade('Street Workout')">
+            <div class="card" onclick="abrirModalidadePelaHome('Street Workout')">
                 <h3>Street Workout</h3>
                 <p>Explosão, barras, técnica e impacto visual.</p>
             </div>
 
-            <div class="card" onclick="mostrarDetalheModalidade('TAF')">
+            <div class="card" onclick="abrirModalidadePelaHome('TAF')">
                 <h3>TAF</h3>
                 <p>Preparação física direcionada para performance e testes.</p>
             </div>
@@ -114,10 +121,10 @@ function mostrarEscolhaModalidadeExperimental() {
         <p>Selecione a modalidade da sua aula experimental:</p>
 
         <div class="cards">
-            <div class="card" onclick="mostrarDetalheModalidade('Ginástica')">Ginástica</div>
-            <div class="card" onclick="mostrarDetalheModalidade('Calistenia')">Calistenia</div>
-            <div class="card" onclick="mostrarDetalheModalidade('Street Workout')">Street Workout</div>
-            <div class="card" onclick="mostrarDetalheModalidade('TAF')">TAF</div>
+            <div class="card" onclick="abrirModalidadePelaHome('Ginástica')">Ginástica</div>
+            <div class="card" onclick="abrirModalidadePelaHome('Calistenia')">Calistenia</div>
+            <div class="card" onclick="abrirModalidadePelaHome('Street Workout')">Street Workout</div>
+            <div class="card" onclick="abrirModalidadePelaHome('TAF')">TAF</div>
         </div>
 
         <button onclick="mostrarInicio()" class="btn-voltar">⬅ Voltar</button>
@@ -241,7 +248,7 @@ function mostrarDetalheModalidade(modalidade) {
             </div>
 
             <br>
-            <button class="btn-voltar" onclick="mostrarModalidades()">⬅ Voltar</button>
+            <button class="btn-voltar" onclick="voltarOrigemModalidade()">⬅ Voltar</button>
         </div>
     </section>
     `);
@@ -274,10 +281,10 @@ function mostrarModalidades() {
         <h2>Modalidades</h2>
 
         <div class="cards">
-            <div class="card" onclick="mostrarDetalheModalidade('Ginástica')">Ginástica</div>
-            <div class="card" onclick="mostrarDetalheModalidade('Calistenia')">Calistenia</div>
-            <div class="card" onclick="mostrarDetalheModalidade('Street Workout')">Street Workout</div>
-            <div class="card" onclick="mostrarDetalheModalidade('TAF')">TAF</div>
+            <div class="card" onclick="abrirModalidadePelaPaginaModalidades('Ginástica')">Ginástica</div>
+            <div class="card" onclick="abrirModalidadePelaPaginaModalidades('Calistenia')">Calistenia</div>
+            <div class="card" onclick="abrirModalidadePelaPaginaModalidades('Street Workout')">Street Workout</div>
+            <div class="card" onclick="abrirModalidadePelaPaginaModalidades('TAF')">TAF</div>
         </div>
 
         <p style="margin-top: 20px;">
@@ -349,7 +356,9 @@ function mostrarLogin() {
         <h3>Ou cadastre-se</h3>
 
         <form onsubmit="registrar(event)">
+            <input type="text" id="nomeCadastro" placeholder="Nome" required>
             <input type="email" id="emailCadastro" placeholder="Email" required>
+            <input type="text" id="telefoneCadastro" placeholder="Telefone">
             <input type="password" id="senhaCadastro" placeholder="Senha" required>
             <button type="submit">Cadastrar</button>
         </form>
@@ -395,7 +404,9 @@ async function fazerLogin(event) {
 async function registrar(event) {
     event.preventDefault();
 
+    const nome = document.getElementById("nomeCadastro").value;
     const email = document.getElementById("emailCadastro").value;
+    const telefone = document.getElementById("telefoneCadastro").value;
     const senha = document.getElementById("senhaCadastro").value;
 
     try {
@@ -404,7 +415,7 @@ async function registrar(event) {
             headers: {
                 "Content-Type": "application/x-www-form-urlencoded"
             },
-            body: `email=${encodeURIComponent(email)}&senha=${encodeURIComponent(senha)}`
+            body: `nome=${encodeURIComponent(nome)}&email=${encodeURIComponent(email)}&telefone=${encodeURIComponent(telefone)}&senha=${encodeURIComponent(senha)}`
         });
 
         const texto = await resposta.text();
@@ -440,6 +451,7 @@ function mostrarAreaLogada() {
                 <div class="dash-card" onclick="editarAvisos()">📢 Editar Avisos</div>
                 <div class="dash-card" onclick="editarAulaExperimental()">📅 Aula Experimental</div>
                 <div class="dash-card" onclick="verAgendamentosExperimental()">📋 Ver Agendamentos</div>
+                <div class="dash-card" onclick="verAlunosAdmin()">👥 Ver Alunos</div>
             </div>
 
             <button onclick="logout()" class="btn-sair">Sair</button>
@@ -862,10 +874,12 @@ window.addEventListener("scroll", () => {
 
     if (!header) return;
 
-    if (window.scrollY > 50) {
-        header.style.background = "rgba(0,0,0,0.98)";
-        header.style.borderBottom = "1px solid gold";
+    if (window.scrollY > 60) {
+        header.classList.add("header-compacto");
+        header.style.background = "rgba(0,0,0,0.97)";
+        header.style.borderBottom = "1px solid rgba(255,215,0,0.18)";
     } else {
+        header.classList.remove("header-compacto");
         header.style.background = "rgba(0,0,0,0.92)";
         header.style.borderBottom = "1px solid rgba(255,215,0,0.25)";
     }
@@ -887,6 +901,27 @@ function aplicarFadeUp() {
     });
 }
 
+// Função Abrir modalidade pela home
+function abrirModalidadePelaHome(modalidade) {
+    origemModalidade = "inicio";
+    mostrarDetalheModalidade(modalidade);
+}
+
+// Função Abrir modalidade pela pagina modalidades
+function abrirModalidadePelaPaginaModalidades(modalidade) {
+    origemModalidade = "modalidades";
+    mostrarDetalheModalidade(modalidade);
+}
+
+// Função voltar origem modalidade
+function voltarOrigemModalidade() {
+    if (origemModalidade === "inicio") {
+        mostrarInicio();
+    } else {
+        mostrarModalidades();
+    }
+}
+
 // Loader
 window.addEventListener("load", () => {
     const loader = document.getElementById("loader");
@@ -906,4 +941,176 @@ window.onload = function() {
     } else {
         mostrarInicio();
     }
-};
+}; 
+
+// Função rolar para conteudo
+function rolarParaConteudo() {
+    const destino = document.querySelector(".bloco-destaque");
+
+    if (destino) {
+        destino.scrollIntoView({
+            behavior: "smooth",
+            block: "start"
+        });
+    }
+}
+
+// Função Ver alunos admin
+async function verAlunosAdmin() {
+    try {
+        const resposta = await fetch("/admin/usuarios");
+        const usuarios = await resposta.json();
+
+        let html = `
+        <section class="fade-up">
+            <h2>👥 Alunos cadastrados</h2>
+
+            <input type="text" id="buscaAluno" placeholder="Buscar por nome ou email" oninput="filtrarAlunosAdmin()" style="max-width: 400px; margin: 0 auto 20px; display:block;">
+
+            <div id="listaAlunosAdmin">
+        `;
+
+        if (!usuarios || usuarios.length === 0) {
+            html += `<p>Nenhum usuário encontrado.</p>`;
+        } else {
+            usuarios.forEach(usuario => {
+                html += `
+                <div class="card aluno-admin-card" data-nome="${(usuario.nome || "").toLowerCase()}" data-email="${(usuario.email || "").toLowerCase()}" style="margin-bottom: 15px;">
+                    <p><strong>Nome:</strong> ${usuario.nome || "Não informado"}</p>
+                    <p><strong>Email:</strong> ${usuario.email}</p>
+                    <p><strong>Plano:</strong> ${usuario.plano || "Não definido"}</p>
+
+                    <button onclick="abrirPerfilAluno('${usuario._id}')">Abrir perfil</button>
+                </div>
+                `;
+            });
+        }
+
+        html += `
+            </div>
+
+            <button onclick="mostrarAreaLogada()" class="btn-voltar">⬅ Voltar</button>
+        </section>
+        `;
+
+        trocarConteudo(html);
+    } catch (erro) {
+        console.error("Erro ao carregar usuários:", erro);
+
+        trocarConteudo(`
+        <section class="fade-up">
+            <h2>👥 Alunos cadastrados</h2>
+            <p>Erro ao carregar usuários.</p>
+            <button onclick="mostrarAreaLogada()" class="btn-voltar">⬅ Voltar</button>
+        </section>
+        `);
+    }
+}
+
+// Função Abrir perfil aluno
+async function abrirPerfilAluno(id) {
+    try {
+        const resposta = await fetch(`/admin/usuarios/${id}`);
+        const usuario = await resposta.json();
+
+        trocarConteudo(`
+        <section class="fade-up">
+            <h2>👤 Perfil do Aluno</h2>
+
+            <form onsubmit="salvarPerfilAluno(event, '${usuario._id}')">
+                <input type="text" id="editarNome" value="${usuario.nome || ""}" placeholder="Nome">
+                <input type="email" id="editarEmail" value="${usuario.email || ""}" placeholder="Email">
+                <input type="text" id="editarTelefone" value="${usuario.telefone || ""}" placeholder="Telefone">
+                <input type="text" id="editarPlano" value="${usuario.plano || ""}" placeholder="Plano">
+                <input type="text" id="editarHorarioAulas" value="${usuario.horarioAulas || ""}" placeholder="Horário das aulas">
+                <textarea id="editarTreinos" rows="6" placeholder="Treinos">${usuario.treinos || ""}</textarea>
+
+                <button type="submit">Salvar alterações</button>
+            </form>
+
+            <br>
+            <button onclick="excluirAluno('${usuario._id}')">🗑 Excluir perfil</button>
+            <button onclick="verAlunosAdmin()" class="btn-voltar">⬅ Voltar</button>
+        </section>
+        `);
+    } catch (erro) {
+        console.error("Erro ao abrir perfil:", erro);
+        alert("Erro ao abrir perfil do aluno.");
+    }
+}
+
+// Função Salvar perfil aluno
+async function salvarPerfilAluno(event, id) {
+    event.preventDefault();
+
+    const nome = document.getElementById("editarNome").value;
+    const email = document.getElementById("editarEmail").value;
+    const telefone = document.getElementById("editarTelefone").value;
+    const plano = document.getElementById("editarPlano").value;
+    const horarioAulas = document.getElementById("editarHorarioAulas").value;
+    const treinos = document.getElementById("editarTreinos").value;
+
+    try {
+        const resposta = await fetch(`/admin/usuarios/${id}`, {
+            method: "PUT",
+            headers: {
+                "Content-Type": "application/json"
+            },
+            body: JSON.stringify({
+                nome,
+                email,
+                telefone,
+                plano,
+                horarioAulas,
+                treinos
+            })
+        });
+
+        if (resposta.ok) {
+            alert("Perfil atualizado com sucesso!");
+            abrirPerfilAluno(id);
+        } else {
+            alert("Erro ao atualizar perfil.");
+        }
+    } catch (erro) {
+        console.error("Erro ao salvar perfil:", erro);
+        alert("Erro ao salvar alterações.");
+    }
+}
+
+// Função Excluir aluno
+async function excluirAluno(id) {
+    const confirmar = confirm("Deseja realmente excluir este perfil?");
+
+    if (!confirmar) return;
+
+    try {
+        const resposta = await fetch(`/admin/usuarios/${id}`, {
+            method: "DELETE"
+        });
+
+        const dados = await resposta.json();
+        alert(dados.mensagem || "Usuário excluído com sucesso!");
+        verAlunosAdmin();
+    } catch (erro) {
+        console.error("Erro ao excluir usuário:", erro);
+        alert("Erro ao excluir usuário.");
+    }
+}
+
+// Função Filtrar alunos admin
+function filtrarAlunosAdmin() {
+    const busca = document.getElementById("buscaAluno").value.toLowerCase();
+    const cards = document.querySelectorAll(".aluno-admin-card");
+
+    cards.forEach(card => {
+        const nome = card.getAttribute("data-nome");
+        const email = card.getAttribute("data-email");
+
+        if (nome.includes(busca) || email.includes(busca)) {
+            card.style.display = "block";
+        } else {
+            card.style.display = "none";
+        }
+    });
+}

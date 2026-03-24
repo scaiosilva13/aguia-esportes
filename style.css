@@ -26,19 +26,20 @@ header {
     display: flex;
     justify-content: space-between;
     align-items: center;
-    padding: 10px 32px;
+    padding: 2px 18px;
     background: rgba(0, 0, 0, 0.92);
     border-bottom: 1px solid rgba(255, 215, 0, 0.25);
     position: sticky;
     top: 0;
     z-index: 1000;
     backdrop-filter: blur(8px);
-    min-height: 88px;
+    min-height: 58  px;
+    transition: all 0.3s ease;
 }
 .logo-area {
     display: flex;
     align-items: center;
-    gap: 16px;
+    gap: 10px;
 }
 
 .logo-img {
@@ -49,9 +50,9 @@ header {
         drop-shadow(0 0 16px rgba(255, 215, 0, 0.45))
         brightness(1.12)
         contrast(1.08);
-    animation: flutuarLogo 3.5s ease-in-out infinite;
-    margin-top: 6px;
-    margin-bottom: 6px;
+    animation: logoEntrada 1s ease-out, flutuarLogo 3.5s ease-in-out infinite;
+    margin-top: -14px;
+    margin-bottom: -14px;
 }
 @keyframes flutuarLogo {
     0%   { transform: translateY(0px) scale(1); }
@@ -62,21 +63,24 @@ header {
 .logo-texto {
     display: flex;
     flex-direction: column;
-    line-height: 1.5; /* MAIS ESPAÇO ENTRE AS LINHAS */
+    line-height: 1.22; /* MAIS ESPAÇO ENTRE AS LINHAS */
+    padding-top: 2px;
+    padding-bottom: 4px;
 }
 .logo-nome {
-    font-size: 2rem;
+    font-size: 1,62rem;
     font-weight: 800;
     background: linear-gradient(45deg, #f7d25d, #ffb300, #f7d25d);
     -webkit-background-clip: text;
     -webkit-text-fill-color: transparent;
     letter-spacing: 0.5px;
+    padding-bottom: 3px;
 }
 .logo-sub {
-    font-size: 0.95rem;
+    font-size: 0.86rem;
     color: #d6c68a;
-    letter-spacing: 0.6px;
-    margin-top: 8px; /* DESCE UM POUCO */
+    letter-spacing: 0.5px;
+    margin-top: 4px; /* DESCE UM POUCO */
 }
 
 /* =========================
@@ -86,7 +90,7 @@ header {
 nav {
     display: flex;
     align-items: center;
-    gap: 30px;
+    gap: 16px;
 }
 
 nav a {
@@ -94,7 +98,7 @@ nav a {
     color: white;
     text-decoration: none;
     font-weight: 600;
-    font-size: 1.1rem;
+    font-size: 0,98rem;
     transition: 0.3s;
     cursor: pointer;
 }
@@ -122,14 +126,16 @@ nav a:hover {
     background: linear-gradient(45deg, gold, orange);
     color: black;
     border: none;
-    padding: 12px 24px;
+    padding: 8px 16px;
     border-radius: 30px;
     font-weight: 800;
-    font-size: 1rem;
+    font-size: 0.92rem;
     cursor: pointer;
     transition: 0.3s;
     box-shadow: 0 0 10px rgba(255, 215, 0, 0.45);
-    animation: pulsar 2s infinite;
+    animation: menuEntrada 0.6s ease forwards;
+    animation-delay: 0.6s;
+    opacity: 0;
 }
 .btn-destaque:hover {
     transform: scale(1.08);
@@ -153,6 +159,8 @@ nav a:hover {
     align-items: center;
     justify-content: center;
     text-align: center;
+    padding-top: 30px;
+
 }
 
 .hero-marca {
@@ -943,6 +951,113 @@ header:hover {
     }
 }
 
+.indicador-scroll {
+    margin-top: 34px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 8px;
+    color: #d6c68a;
+    font-size: 0.95rem;
+    opacity: 0.9;
+    animation: aparecerSuave 1.5s ease;
+    cursor: pointer;
+    transition: 0.3s;
+}
+
+.indicador-scroll:hover {
+    transform: translateY(3px);
+    color: gold;
+}
+
+.seta-scroll {
+    font-size: 2rem;
+    color: gold;
+    animation: descerSeta 1.5s infinite;
+    line-height: 1;
+}
+
+@keyframes descerSeta {
+    0% {
+        transform: translateY(0);
+        opacity: 0.6;
+    }
+    50% {
+        transform: translateY(8px);
+        opacity: 1;
+    }
+    100% {
+        transform: translateY(0);
+        opacity: 0.6;
+    }
+}
+
+@keyframes aparecerSuave {
+    from {
+        opacity: 0;
+        transform: translateY(12px);
+    }
+    to {
+        opacity: 0.9;
+        transform: translateY(0);
+    }
+}
+
+header.header-compacto {
+    padding: 0px 16px;
+    min-height: 48px;
+    background: rgba(0, 0, 0, 0.97);
+    border-bottom: 1px solid rgba(255, 215, 0, 0.18);
+}
+
+header.header-compacto .logo-img {
+    transform: scale(0.9);
+}
+
+header.header-compacto .logo-nome {
+    font-size: 1.48rem;
+}
+
+header.header-compacto .logo-sub {
+    font-size: 0.78rem;
+    margin-top: 2px;
+}
+
+header.header-compacto nav a {
+    font-size: 0.93rem;
+}
+
+header.header-compacto .btn-destaque {
+    padding: 7px 14px;
+    font-size: 0.85rem;
+}
+
+.logo-img,
+.logo-nome,
+.logo-sub,
+nav a,
+.btn-destaque {
+    transition: all 0.3s ease;
+}
+
+.aluno-admin-card {
+    max-width: 700px;
+    margin-left: auto;
+    margin-right: auto;
+    text-align: left;
+}
+
+.aluno-admin-card p {
+    margin-bottom: 8px;
+}
+
+#buscaAluno {
+    background: #111;
+    border: 1px solid rgba(255, 215, 0, 0.2);
+    color: white;
+    border-radius: 12px;
+    padding: 12px 14px;
+}
 
 
 

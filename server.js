@@ -51,9 +51,14 @@ const AulaExperimental = mongoose.model("AulaExperimental", {
 
 // Modelo de usuário
 const Usuario = mongoose.model("Usuario", {
+    nome: String,
     email: String,
     senha: String,
-    tipo: String
+    telefone: String,
+    tipo: String,
+    plano: String,
+    horarioAulas: String,
+    treinos: String
 });
 
 // Modelo de horários
@@ -69,7 +74,7 @@ const Horario = mongoose.model("Horario", {
 
 app.get("/teste-banco", async (req, res) => {
     try {
-        const usuarios = await Usuario.find().limit(5);
+        const usuarios = await Usuario.find({}, "-senha").limit(5);
         res.json({
             sucesso: true,
             mensagem: "Banco conectado com sucesso!",
@@ -146,12 +151,23 @@ app.post("/registrar", async (req, res) => {
             tipo = "admin";
         }
 
+        const usuarioExistente = await Usuario.findOne({ email: req.body.email });
+
+        if (usuarioExistente) {
+            return res.send("Já existe um usuário com esse email.");
+        }
+
         const senhaCriptografada = await bcrypt.hash(req.body.senha, 10);
 
         const novoUsuario = new Usuario({
+            nome: req.body.nome || "",
             email: req.body.email,
             senha: senhaCriptografada,
-            tipo: tipo
+            telefone: req.body.telefone || "",
+            tipo: tipo,
+            plano: "Mensal",
+            horarioAulas: "Não definido",
+            treinos: "Não definido"
         });
 
         await novoUsuario.save();
@@ -249,9 +265,10 @@ app.post("/cancelar-agendamento-aula-experimental", async (req, res) => {
     }
 
     const aula = await AulaExperimental.findOne({
+        modalidade: agendamento.modalidade, 
         data: agendamento.data,
         horario: agendamento.horario
-    });
+});
 
     if (aula) {
         aula.vagas = aula.vagas + 1;
@@ -265,7 +282,7 @@ app.post("/cancelar-agendamento-aula-experimental", async (req, res) => {
 
 app.get("/painel-teste", async (req, res) => {
     try {
-        const usuarios = await Usuario.find();
+        const usuarios = await Usuario.find({}, "-senha"); 
         const horarios = await Horario.find();
         const aulas = await AulaExperimental.find();
         const agendamentos = await AgendamentoExperimental.find();
@@ -282,6 +299,71 @@ app.get("/painel-teste", async (req, res) => {
             erro: "Erro ao carregar dados",
             detalhe: erro.message
         });
+    }
+});
+
+// Listar usuários
+app.get("/admin/usuarios", async (req, res) => {
+    try {
+        const usuarios = await Usuario.find({ tipo: { $ne: "admin" } }, "-senha");
+        res.json(usuarios);
+    } catch (erro) {
+        res.status(500).json({ erro: "Erro ao buscar usuários" });
+    }
+});
+
+// Buscar usuário por ID
+app.get("/admin/usuarios/:id", async (req, res) => {
+    try {
+        const usuario = await Usuario.findById(req.params.id, "-senha");
+
+        if (!usuario || usuario.tipo === "admin") {
+            return res.status(404).json({ erro: "Usuário não encontrado" });
+        }
+
+        res.json(usuario);
+    } catch (erro) {
+        res.status(500).json({ erro: "Erro ao buscar usuário" });
+    }
+});
+
+// Editar usuário
+app.put("/admin/usuarios/:id", async (req, res) => {
+    try {
+        const usuario = await Usuario.findById(req.params.id);
+
+        if (!usuario || usuario.tipo === "admin") {
+            return res.status(403).json({ erro: "Não permitido alterar este usuário" });
+        }
+
+        usuario.nome = req.body.nome;
+        usuario.email = req.body.email;
+        usuario.telefone = req.body.telefone;
+        usuario.plano = req.body.plano;
+        usuario.horarioAulas = req.body.horarioAulas;
+        usuario.treinos = req.body.treinos;
+
+        await usuario.save();
+
+        res.json(usuario);
+    } catch (erro) {
+        res.status(500).json({ erro: "Erro ao atualizar usuário" });
+    }
+});
+
+// Excluir usuário
+app.delete("/admin/usuarios/:id", async (req, res) => {
+    try {
+        const usuario = await Usuario.findById(req.params.id);
+
+        if (!usuario || usuario.tipo === "admin") {
+            return res.status(403).json({ erro: "Não permitido excluir este usuário" });
+        }
+
+        await Usuario.findByIdAndDelete(req.params.id);
+        res.json({ sucesso: true, mensagem: "Usuário excluído com sucesso!" });
+    } catch (erro) {
+        res.status(500).json({ erro: "Erro ao excluir usuário" });
     }
 });
 
