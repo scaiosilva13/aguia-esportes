@@ -1059,5 +1059,415 @@ nav a,
     padding: 12px 14px;
 }
 
+.painel-exp-admin {
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 20px;
+}
+
+.admin-topo-premium {
+    text-align: center;
+    margin-bottom: 30px;
+}
+
+.admin-topo-premium h2 {
+    font-size: 2rem;
+    margin-bottom: 8px;
+}
+
+.admin-topo-premium p {
+    color: rgba(255, 255, 255, 0.75);
+    max-width: 760px;
+    margin: 0 auto;
+}
+
+.form-premium-admin {
+    background: linear-gradient(145deg, rgba(255,255,255,0.04), rgba(255,255,255,0.02));
+    border: 1px solid rgba(255,215,0,0.15);
+    border-radius: 22px;
+    padding: 24px;
+    box-shadow: 0 10px 30px rgba(0,0,0,0.28);
+    backdrop-filter: blur(8px);
+    margin-bottom: 28px;
+}
+
+.form-premium-admin h3 {
+    margin-bottom: 16px;
+}
+
+.form-grid-admin {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+    gap: 14px;
+}
+
+.form-grid-admin input,
+.form-grid-admin select {
+    width: 100%;
+    padding: 14px 16px;
+    border-radius: 14px;
+    border: 1px solid rgba(255,255,255,0.08);
+    background: rgba(255,255,255,0.04);
+    color: white;
+    outline: none;
+    transition: 0.25s ease;
+}
+
+.form-grid-admin input:focus,
+.form-grid-admin select:focus {
+    border-color: rgba(255,215,0,0.45);
+    box-shadow: 0 0 0 3px rgba(255,215,0,0.08);
+}
+
+.filtro-area-admin {
+    text-align: center;
+    margin: 30px 0 24px;
+}
+
+.filtro-botoes-admin {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: 12px;
+    flex-wrap: wrap;
+    margin-top: 14px;
+}
+
+.btn-filtro-admin,
+.btn-acao-admin,
+.btn-voltar-premium {
+    border: none;
+    cursor: pointer;
+    border-radius: 14px;
+    padding: 12px 18px;
+    font-weight: 700;
+    transition: all 0.25s ease;
+}
+
+.btn-filtro-admin {
+    background: rgba(255,255,255,0.05);
+    color: white;
+    border: 1px solid rgba(255,215,0,0.14);
+}
+
+.btn-filtro-admin:hover {
+    transform: translateY(-2px);
+    background: rgba(255,215,0,0.10);
+    border-color: rgba(255,215,0,0.35);
+    box-shadow: 0 10px 20px rgba(0,0,0,0.18);
+}
+
+.btn-filtro-admin.ativo {
+    background: linear-gradient(135deg, #d4af37, #f3d36a);
+    color: #111;
+    box-shadow: 0 10px 22px rgba(212,175,55,0.28);
+}
+
+.btn-acao-admin {
+    background: linear-gradient(135deg, #d4af37, #f3d36a);
+    color: #111;
+    min-width: 150px;
+}
+
+.btn-acao-admin:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 12px 24px rgba(212,175,55,0.28);
+}
+
+.btn-secundario-admin {
+    background: rgba(255,255,255,0.05);
+    color: white;
+    border: 1px solid rgba(255,255,255,0.08);
+}
+
+.btn-secundario-admin:hover {
+    transform: translateY(-2px);
+    background: rgba(255,255,255,0.08);
+}
+
+.btn-excluir-admin {
+    background: linear-gradient(135deg, #7a1c1c, #b33434);
+    color: white;
+}
+
+.btn-excluir-admin:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 10px 22px rgba(179,52,52,0.25);
+}
+
+.cards-aula-admin {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+    gap: 18px;
+    margin-top: 20px;
+}
+
+.card-aula-premium {
+    background: linear-gradient(160deg, rgba(255,255,255,0.05), rgba(255,255,255,0.025));
+    border: 1px solid rgba(255,215,0,0.14);
+    border-radius: 22px;
+    padding: 20px;
+    box-shadow: 0 10px 28px rgba(0,0,0,0.22);
+    transition: all 0.25s ease;
+}
+
+.card-aula-premium:hover {
+    transform: translateY(-4px);
+    border-color: rgba(255,215,0,0.28);
+    box-shadow: 0 16px 34px rgba(0,0,0,0.28);
+}
+
+.card-aula-premium h4 {
+    margin-bottom: 12px;
+    font-size: 1.1rem;
+}
+
+.card-aula-premium p {
+    margin: 8px 0;
+    color: rgba(255,255,255,0.88);
+}
+
+.acoes-card-admin {
+    display: flex;
+    gap: 10px;
+    flex-wrap: wrap;
+    margin-top: 16px;
+}
+
+.bloco-calendario-premium,
+.bloco-dia-admin {
+    background: linear-gradient(160deg, rgba(255,255,255,0.045), rgba(255,255,255,0.02));
+    border: 1px solid rgba(255,215,0,0.12);
+    border-radius: 22px;
+    padding: 22px;
+    margin-top: 22px;
+    box-shadow: 0 10px 28px rgba(0,0,0,0.20);
+}
+
+.admin-barra-mes {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: 12px;
+    flex-wrap: wrap;
+    margin-bottom: 22px;
+}
+
+.admin-mes-label {
+    min-width: 170px;
+    text-align: center;
+    font-weight: 800;
+    font-size: 1.05rem;
+}
+
+.linha-divisoria-admin {
+    margin: 28px 0;
+    border: none;
+    height: 1px;
+    background: linear-gradient(to right, transparent, rgba(255,215,0,0.25), transparent);
+}
+
+.form-premium-admin select,
+.form-premium-admin input,
+.form-grid-admin select,
+.form-grid-admin input {
+    width: 100%;
+    padding: 14px 16px;
+    border-radius: 14px;
+    border: 1px solid rgba(212, 175, 55, 0.22);
+    background: linear-gradient(145deg, rgba(15,15,15,0.96), rgba(28,28,28,0.96));
+    color: #f5f5f5;
+    font-size: 0.98rem;
+    font-family: 'Poppins', sans-serif;
+    outline: none;
+    box-shadow: inset 0 1px 0 rgba(255,255,255,0.03);
+    transition: all 0.25s ease;
+    appearance: none;
+    -webkit-appearance: none;
+    -moz-appearance: none;
+}
+
+.form-premium-admin select:focus,
+.form-premium-admin input:focus,
+.form-grid-admin select:focus,
+.form-grid-admin input:focus {
+    border-color: rgba(212, 175, 55, 0.75);
+    box-shadow:
+        0 0 0 3px rgba(212, 175, 55, 0.10),
+        0 8px 20px rgba(0,0,0,0.22);
+    transform: translateY(-1px);
+}
+
+.form-premium-admin select:hover,
+.form-premium-admin input:hover,
+.form-grid-admin select:hover,
+.form-grid-admin input:hover {
+    border-color: rgba(212, 175, 55, 0.45);
+}
+
+/* Placeholder */
+.form-premium-admin input::placeholder,
+.form-grid-admin input::placeholder {
+    color: rgba(255,255,255,0.48);
+}
+
+/* Select com seta personalizada */
+.form-premium-admin select,
+.form-grid-admin select {
+    background-image:
+        linear-gradient(145deg, rgba(15,15,15,0.96), rgba(28,28,28,0.96)),
+        url("data:image/svg+xml;utf8,<svg fill='%23d4af37' height='20' viewBox='0 0 24 24' width='20' xmlns='http://www.w3.org/2000/svg'><path d='M7 10l5 5 5-5z'/></svg>");
+    background-repeat: no-repeat, no-repeat;
+    background-position: 0 0, right 14px center;
+    background-size: 100% 100%, 18px;
+    padding-right: 42px;
+    cursor: pointer;
+}
+
+/* Opções internas do select */
+.form-premium-admin select option,
+.form-grid-admin select option {
+    background: #111111;
+    color: #f5f5f5;
+}
+
+/* Campos date/time com aparência mais escura */
+.form-premium-admin input[type="date"],
+.form-premium-admin input[type="time"],
+.form-premium-admin input[type="number"],
+.form-grid-admin input[type="date"],
+.form-grid-admin input[type="time"],
+.form-grid-admin input[type="number"] {
+    background: linear-gradient(145deg, rgba(15,15,15,0.96), rgba(28,28,28,0.96));
+    color-scheme: dark;
+}
+
+/* Ícones internos de data/hora em navegadores WebKit */
+.form-premium-admin input[type="date"]::-webkit-calendar-picker-indicator,
+.form-premium-admin input[type="time"]::-webkit-calendar-picker-indicator,
+.form-grid-admin input[type="date"]::-webkit-calendar-picker-indicator,
+.form-grid-admin input[type="time"]::-webkit-calendar-picker-indicator {
+    filter: invert(74%) sepia(49%) saturate(477%) hue-rotate(8deg) brightness(96%) contrast(89%);
+    cursor: pointer;
+}
+
+/* Remove spinner feio do number em alguns navegadores */
+.form-premium-admin input[type="number"]::-webkit-outer-spin-button,
+.form-premium-admin input[type="number"]::-webkit-inner-spin-button,
+.form-grid-admin input[type="number"]::-webkit-outer-spin-button,
+.form-grid-admin input[type="number"]::-webkit-inner-spin-button {
+    -webkit-appearance: none;
+    margin: 0;
+}
+
+.form-premium-admin input[type="number"],
+.form-grid-admin input[type="number"] {
+    -moz-appearance: textfield;
+}
+
+/* Área do formulário mais bonita */
+.form-premium-admin {
+    background: linear-gradient(160deg, rgba(18,18,18,0.98), rgba(31,31,31,0.96));
+    border: 1px solid rgba(212, 175, 55, 0.16);
+    border-radius: 22px;
+    padding: 24px;
+    box-shadow:
+        0 12px 30px rgba(0,0,0,0.28),
+        inset 0 1px 0 rgba(255,255,255,0.03);
+    backdrop-filter: blur(8px);
+}
+
+/* Título dos blocos */
+.form-premium-admin h3,
+.bloco-dia-admin h3,
+.bloco-dia-admin h4 {
+    color: #f3d36a;
+}
+
+/* Painel do dia também mais bonito */
+.bloco-dia-admin {
+    background: linear-gradient(160deg, rgba(18,18,18,0.98), rgba(31,31,31,0.96));
+    border: 1px solid rgba(212, 175, 55, 0.16);
+    border-radius: 22px;
+    padding: 24px;
+    box-shadow:
+        0 12px 30px rgba(0,0,0,0.28),
+        inset 0 1px 0 rgba(255,255,255,0.03);
+}
+
+/* Melhor espaçamento dos forms */
+.form-premium-admin form,
+.bloco-dia-admin form {
+    margin-top: 14px;
+}
+
+/* Botão do formulário combinando com o padrão */
+.form-premium-admin button,
+.bloco-dia-admin button {
+    font-family: 'Poppins', sans-serif;
+}
+
+/* Ajuste mobile */
+@media (max-width: 768px) {
+    .form-premium-admin,
+    .bloco-dia-admin {
+        padding: 18px;
+        border-radius: 18px;
+    }
+
+    .form-premium-admin select,
+    .form-premium-admin input,
+    .form-grid-admin select,
+    .form-grid-admin input {
+        padding: 13px 14px;
+        font-size: 0.95rem;
+    }
+}
+
+.calendario .dia {
+    transition: all 0.22s ease;
+    cursor: pointer;
+}
+
+.calendario .dia:hover {
+    transform: translateY(-2px) scale(1.03);
+    box-shadow: 0 10px 18px rgba(0,0,0,0.22);
+}
+
+.dia-selecionado-admin {
+    outline: 2px solid #f3d36a;
+    box-shadow:
+        0 0 0 3px rgba(243, 211, 106, 0.14),
+        0 10px 22px rgba(212, 175, 55, 0.20);
+    transform: scale(1.04);
+}
+
+.admin-conteudo-suave {
+    transition: opacity 0.22s ease, transform 0.22s ease;
+    opacity: 1;
+    transform: translateY(0);
+}
+
+.admin-conteudo-suave.atualizando {
+    opacity: 0.35;
+    transform: translateY(6px);
+    pointer-events: none;
+}
+
+.admin-conteudo-suave.entrou {
+    animation: fadeSlideAdmin 0.28s ease;
+}
+
+@keyframes fadeSlideAdmin {
+    from {
+        opacity: 0.45;
+        transform: translateY(10px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
 
 

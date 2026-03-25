@@ -2,6 +2,7 @@ require("dotenv").config();
 const bcrypt = require("bcrypt");
 const express = require("express");
 const mongoose = require("mongoose");
+const session = require("express-session");
 
 const app = express();
 const port = process.env.PORT || 3000;
@@ -14,6 +15,16 @@ mongoose.connect(process.env.MONGO_URI)
 // ✅ MIDDLEWARES
 app.use(express.urlencoded({ extended: true }));
 app.use(express.json());
+app.use(session({
+    secret: "aguia-esportes-chave-secreta",
+    resave: false,
+    saveUninitialized: false,
+    cookie: {
+        secure: false,
+        httpOnly: true,
+        maxAge: 1000 * 60 * 60 * 12
+    }
+}));
 app.use(express.static(__dirname));
 
 // =============================
@@ -61,12 +72,57 @@ const Usuario = mongoose.model("Usuario", {
     treinos: String
 });
 
+// Modelo de gararantir admin padrao
+async function garantirAdminPadrao() {
+    try {
+        const adminExistente = await Usuario.findOne({ tipo: "admin" });
+
+        if (!adminExistente) {
+            const senhaCriptografada = await bcrypt.hash("admin12345", 10);
+
+            await Usuario.create({
+                nome: "Professor",
+                email: "admin@aguia.com",
+                senha: senhaCriptografada,
+                telefone: "31999999999",
+                tipo: "admin",
+                plano: "",
+                horarioAulas: "",
+                treinos: ""
+            });
+
+            console.log("✅ Admin padrão criado com sucesso");
+        }
+    } catch (erro) {
+        console.log("Erro ao garantir admin padrão:", erro.message);
+    }
+}
+
 // Modelo de horários
 const Horario = mongoose.model("Horario", {
     dia: String,
     horario: String,
     treino: String
 });
+
+function verificarLogin(req, res, next) {
+    if (!req.session.usuario) {
+        return res.status(401).json({ erro: "Usuário não autenticado." });
+    }
+    next();
+}
+
+function verificarAdmin(req, res, next) {
+    if (!req.session.usuario) {
+        return res.status(401).json({ erro: "Usuário não autenticado." });
+    }
+
+    if (req.session.usuario.tipo !== "admin") {
+        return res.status(403).json({ erro: "Acesso permitido apenas para admin." });
+    }
+
+    next();
+}
 
 // =============================
 // 📥 ROTAS
@@ -142,29 +198,149 @@ app.post("/agendar-aula-experimental", async (req, res) => {
     res.send("Aula experimental agendada com sucesso!");
 });
 
+// admin/aula-experimental
+app.post("/admin/aula-experimental", verificarAdmin, async (req, res) => {
+    try {
+        const modalidade = (req.body.modalidade || "").trim();
+        const data = (req.body.data || "").trim();
+        const horario = (req.body.horario || "").trim();
+        const vagas = Number(req.body.vagas);
+
+        if (!modalidade || !data || !horario) {
+            return res.status(400).json({ erro: "Modalidade, data e horário são obrigatórios." });
+        }
+
+        if (Number.isNaN(vagas) || vagas < 0) {
+            return res.status(400).json({ erro: "Informe uma quantidade válida de vagas." });
+        }
+
+        const existente = await AulaExperimental.findOne({ modalidade, data, horario });
+
+        if (existente) {
+            return res.status(400).json({ erro: "Esse horário já está cadastrado para essa modalidade." });
+        }
+
+        const novaAula = new AulaExperimental({
+            modalidade,
+            data,
+            horario,
+            vagas
+        });
+
+        await novaAula.save();
+
+        res.json({
+            sucesso: true,
+            mensagem: "Aula experimental cadastrada com sucesso!"
+        });
+    } catch (erro) {
+        res.status(500).json({ erro: "Erro ao cadastrar aula experimental." });
+    }
+});
+
+app.delete("/admin/aula-experimental/:id", verificarAdmin, async (req, res) => {
+    try {
+        const aula = await AulaExperimental.findById(req.params.id);
+
+        if (!aula) {
+            return res.status(404).json({ erro: "Aula não encontrada." });
+        }
+
+        await AulaExperimental.findByIdAndDelete(req.params.id);
+
+        res.json({
+            sucesso: true,
+            mensagem: "Aula experimental removida com sucesso!"
+        });
+    } catch (erro) {
+        res.status(500).json({ erro: "Erro ao remover aula experimental." });
+    }
+});
+
+app.put("/admin/aula-experimental/:id", async (req, res) => {
+    try {
+        const modalidade = (req.body.modalidade || "").trim();
+        const data = (req.body.data || "").trim();
+        const horario = (req.body.horario || "").trim();
+        const vagas = Number(req.body.vagas);
+
+        if (!modalidade || !data || !horario) {
+            return res.status(400).json({ erro: "Modalidade, data e horário são obrigatórios." });
+        }
+
+        if (Number.isNaN(vagas) || vagas < 0) {
+            return res.status(400).json({ erro: "Informe uma quantidade válida de vagas." });
+        }
+
+        const aulaAtual = await AulaExperimental.findById(req.params.id);
+
+        if (!aulaAtual) {
+            return res.status(404).json({ erro: "Aula não encontrada." });
+        }
+
+        const duplicada = await AulaExperimental.findOne({
+            modalidade,
+            data,
+            horario,
+            _id: { $ne: req.params.id }
+        });
+
+        if (duplicada) {
+            return res.status(400).json({ erro: "Já existe outra aula com essa modalidade, data e horário." });
+        }
+
+        aulaAtual.modalidade = modalidade;
+        aulaAtual.data = data;
+        aulaAtual.horario = horario;
+        aulaAtual.vagas = vagas;
+
+        await aulaAtual.save();
+
+        res.json({
+            sucesso: true,
+            mensagem: "Aula experimental atualizada com sucesso!"
+        });
+    } catch (erro) {
+        res.status(500).json({ erro: "Erro ao atualizar aula experimental." });
+    }
+});
+
 // Cadastro de usuário
 app.post("/registrar", async (req, res) => {
     try {
-        let tipo = "aluno";
+        const nome = (req.body.nome || "").trim();
+        const email = (req.body.email || "").trim().toLowerCase();
+        const telefoneOriginal = (req.body.telefone || "").trim();
+        const senha = req.body.senha || "";
 
-        if (req.body.email === "admin@aguia.com") {
-            tipo = "admin";
+        const telefone = telefoneOriginal.replace(/\D/g, "");
+
+        if (!nome) {
+            return res.status(400).send("Informe o nome.");
         }
 
-        const usuarioExistente = await Usuario.findOne({ email: req.body.email });
+        if (senha.length < 8) {
+            return res.status(400).send("A senha deve ter pelo menos 8 caracteres.");
+        }
+
+        if (telefone.length < 10 || telefone.length > 11) {
+            return res.status(400).send("Informe um telefone válido com 10 ou 11 dígitos.");
+        }
+
+        const usuarioExistente = await Usuario.findOne({ email });
 
         if (usuarioExistente) {
-            return res.send("Já existe um usuário com esse email.");
+            return res.status(400).send("Já existe um usuário com esse email.");
         }
 
-        const senhaCriptografada = await bcrypt.hash(req.body.senha, 10);
+        const senhaCriptografada = await bcrypt.hash(senha, 10);
 
         const novoUsuario = new Usuario({
-            nome: req.body.nome || "",
-            email: req.body.email,
+            nome,
+            email,
             senha: senhaCriptografada,
-            telefone: req.body.telefone || "",
-            tipo: tipo,
+            telefone,
+            tipo: "aluno",
             plano: "Mensal",
             horarioAulas: "Não definido",
             treinos: "Não definido"
@@ -180,33 +356,36 @@ app.post("/registrar", async (req, res) => {
 // Login
 app.post("/login", async (req, res) => {
     try {
-        const usuario = await Usuario.findOne({
-            email: req.body.email
-        });
+        const email = (req.body.email || "").trim().toLowerCase();
+        const senha = req.body.senha || "";
+
+        const usuario = await Usuario.findOne({ email });
 
         if (!usuario) {
-            return res.json({
-                sucesso: false
-            });
+            return res.status(401).json({ erro: "Usuário inválido" });
         }
 
-        const senhaCorreta = await bcrypt.compare(req.body.senha, usuario.senha);
+        const senhaValida = await bcrypt.compare(senha, usuario.senha);
 
-        if (senhaCorreta) {
-            res.json({
-                sucesso: true,
-                email: usuario.email,
-                tipo: usuario.tipo
-            });
-        } else {
-            res.json({
-                sucesso: false
-            });
+        if (!senhaValida) {
+            return res.status(401).json({ erro: "Senha inválida" });
         }
-    } catch (erro) {
-        res.status(500).json({
-            sucesso: false
+
+        req.session.usuario = {
+            id: usuario._id,
+            email: usuario.email,
+            tipo: usuario.tipo,
+            nome: usuario.nome
+        };
+
+        res.json({
+            sucesso: true,
+            email: usuario.email,
+            tipo: usuario.tipo,
+            nome: usuario.nome
         });
+    } catch (erro) {
+        res.status(500).json({ erro: "Erro ao fazer login." });
     }
 });
 
@@ -367,10 +546,95 @@ app.delete("/admin/usuarios/:id", async (req, res) => {
     }
 });
 
+app.get("/admin/credenciais", verificarAdmin, async (req, res) => {
+    try {
+        const admin = await Usuario.findOne({ tipo: "admin" }, "-senha");
+
+        if (!admin) {
+            return res.status(404).json({ erro: "Admin não encontrado" });
+        }
+
+        res.json(admin);
+    } catch (erro) {
+        res.status(500).json({ erro: "Erro ao buscar credenciais do admin" });
+    }
+});
+
+app.put("/admin/credenciais", verificarAdmin, async (req, res) => {
+    try {
+        const { nome, email, telefone, senha } = req.body;
+
+        const admin = await Usuario.findOne({ tipo: "admin" });
+
+        if (!admin) {
+            return res.status(404).json({ erro: "Admin não encontrado" });
+        }
+
+        const emailLimpo = (email || "").trim().toLowerCase();
+        const telefoneLimpo = (telefone || "").replace(/\D/g, "");
+
+        if (!nome || !emailLimpo) {
+            return res.status(400).json({ erro: "Nome e email são obrigatórios" });
+        }
+
+        if (telefoneLimpo.length < 10 || telefoneLimpo.length > 11) {
+            return res.status(400).json({ erro: "Telefone inválido" });
+        }
+
+        const emailEmUso = await Usuario.findOne({
+            email: emailLimpo,
+            _id: { $ne: admin._id }
+        });
+
+        if (emailEmUso) {
+            return res.status(400).json({ erro: "Esse email já está em uso" });
+        }
+
+        admin.nome = nome.trim();
+        admin.email = emailLimpo;
+        admin.telefone = telefoneLimpo;
+
+        if (senha && senha.trim() !== "") {
+            if (senha.length < 8) {
+                return res.status(400).json({ erro: "A senha deve ter pelo menos 8 caracteres" });
+            }
+
+            admin.senha = await bcrypt.hash(senha, 10);
+        }
+
+        await admin.save();
+
+        res.json({
+            sucesso: true,
+            mensagem: "Credenciais do admin atualizadas com sucesso!",
+            admin: {
+                nome: admin.nome,
+                email: admin.email,
+                telefone: admin.telefone,
+                tipo: admin.tipo
+            }
+        });
+    } catch (erro) {
+        res.status(500).json({ erro: "Erro ao atualizar credenciais do admin" });
+    }
+});
+
+app.post("/logout", (req, res) => {
+    req.session.destroy((erro) => {
+        if (erro) {
+            return res.status(500).json({ erro: "Erro ao fazer logout." });
+        }
+
+        res.clearCookie("connect.sid");
+        res.json({ sucesso: true });
+    });
+});
+
 // =============================
 // 🚀 INICIAR SERVIDOR
 // =============================
-app.listen(port, () => {
+app.listen(port, async () => {
     console.log("Servidor rodando em http://localhost:3000");
+    await garantirAdminPadrao();
 });
 

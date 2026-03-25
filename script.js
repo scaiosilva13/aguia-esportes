@@ -1,7 +1,12 @@
 let origemModalidade = "modalidades";
+const estadoAulaExperimentalAdmin = {
+    filtroModalidade: "",
+    anoMes: "",
+    diaSelecionado: ""
+};
 
 // Função utilitária para trocar conteúdo
-function trocarConteudo(html, aplicarAnimacao = true) {
+function trocarConteudo(html, aplicarAnimacao = true, rolarTopo = true) {
     const conteudo = document.getElementById("conteudo");
     conteudo.innerHTML = html;
 
@@ -9,10 +14,12 @@ function trocarConteudo(html, aplicarAnimacao = true) {
         aplicarFadeUp();
     }
 
-    window.scrollTo({
-        top: 0,
-        behavior: "smooth"
-    });
+    if (rolarTopo) {
+        window.scrollTo({
+            top: 0,
+            behavior: "smooth"
+        });
+    }
 }
 
 // Função mostrar inicio
@@ -262,6 +269,17 @@ async function abrirCalendarioModalidade(modalidade) {
 
         const aulasFiltradas = aulas.filter(a => a.modalidade === modalidade);
 
+        if (!aulasFiltradas.length) {
+            trocarConteudo(`
+            <section class="fade-up">
+                <h2>${modalidade}</h2>
+                <p>Não há aulas experimentais cadastradas para esta modalidade.</p>
+                <button onclick="mostrarDetalheModalidade('${modalidade}')" class="btn-voltar">⬅ Voltar</button>
+            </section>
+            `);
+            return;
+        }
+
         renderCalendarioAulaExperimental(aulasFiltradas, modalidade);
     } catch (erro) {
         trocarConteudo(`
@@ -348,8 +366,21 @@ function mostrarLogin() {
         <h2>Login</h2>
 
         <form onsubmit="fazerLogin(event)">
-            <input type="email" id="email" placeholder="Email" required>
-            <input type="password" id="senha" placeholder="Senha" required>
+            <input type="email"
+                   id="email"
+                   placeholder="Email"
+                   required
+                   autocomplete="username"
+                   autocapitalize="none"
+                   autocorrect="off"
+                   spellcheck="false">
+
+            <input type="password"
+                   id="senha"
+                   placeholder="Senha"
+                   required
+                   autocomplete="current-password">
+
             <button type="submit">Entrar</button>
         </form>
 
@@ -357,9 +388,28 @@ function mostrarLogin() {
 
         <form onsubmit="registrar(event)">
             <input type="text" id="nomeCadastro" placeholder="Nome" required>
-            <input type="email" id="emailCadastro" placeholder="Email" required>
-            <input type="text" id="telefoneCadastro" placeholder="Telefone">
-            <input type="password" id="senhaCadastro" placeholder="Senha" required>
+
+            <input type="email"
+                   id="emailCadastro"
+                   placeholder="Email"
+                   required
+                   autocapitalize="none"
+                   autocorrect="off"
+                   spellcheck="false">
+
+            <input type="text"
+                   id="telefoneCadastro"
+                   placeholder="Telefone (somente números)"
+                   minlength="10"
+                   maxlength="11"
+                   required>
+
+            <input type="password"
+                   id="senhaCadastro"
+                   placeholder="Senha (mín. 8 caracteres)"
+                   minlength="8"
+                   required>
+
             <button type="submit">Cadastrar</button>
         </form>
 
@@ -372,8 +422,13 @@ function mostrarLogin() {
 async function fazerLogin(event) {
     event.preventDefault();
 
-    const email = document.getElementById("email").value;
+    const email = document.getElementById("email").value.trim().toLowerCase();
     const senha = document.getElementById("senha").value;
+
+    if (!email || !senha) {
+        alert("Preencha email e senha.");
+        return;
+    }
 
     try {
         const resposta = await fetch("/login", {
@@ -386,6 +441,11 @@ async function fazerLogin(event) {
 
         const dados = await resposta.json();
 
+        if (!resposta.ok) {
+            alert(dados.erro || "Erro ao tentar fazer login.");
+            return;
+        }
+
         if (dados.sucesso) {
             localStorage.setItem("usuario", dados.email);
             localStorage.setItem("tipo", dados.tipo);
@@ -393,7 +453,7 @@ async function fazerLogin(event) {
             esconderMenu();
             mostrarAreaLogada();
         } else {
-            alert("Login inválido");
+            alert(dados.erro || "Login inválido");
         }
     } catch (erro) {
         alert("Erro ao tentar fazer login.");
@@ -404,10 +464,22 @@ async function fazerLogin(event) {
 async function registrar(event) {
     event.preventDefault();
 
-    const nome = document.getElementById("nomeCadastro").value;
-    const email = document.getElementById("emailCadastro").value;
-    const telefone = document.getElementById("telefoneCadastro").value;
+    const nome = document.getElementById("nomeCadastro").value.trim();
+    const email = document.getElementById("emailCadastro").value.trim().toLowerCase();
+    const telefone = document.getElementById("telefoneCadastro").value.trim();
     const senha = document.getElementById("senhaCadastro").value;
+
+    const telefoneNumeros = telefone.replace(/\D/g, "");
+
+    if (senha.length < 8) {
+        alert("A senha deve ter pelo menos 8 caracteres.");
+        return;
+    }
+
+    if (telefoneNumeros.length < 10 || telefoneNumeros.length > 11) {
+        alert("Informe um telefone válido com 10 ou 11 dígitos.");
+        return;
+    }
 
     try {
         const resposta = await fetch("/registrar", {
@@ -415,7 +487,7 @@ async function registrar(event) {
             headers: {
                 "Content-Type": "application/x-www-form-urlencoded"
             },
-            body: `nome=${encodeURIComponent(nome)}&email=${encodeURIComponent(email)}&telefone=${encodeURIComponent(telefone)}&senha=${encodeURIComponent(senha)}`
+            body: `nome=${encodeURIComponent(nome)}&email=${encodeURIComponent(email)}&telefone=${encodeURIComponent(telefoneNumeros)}&senha=${encodeURIComponent(senha)}`
         });
 
         const texto = await resposta.text();
@@ -430,15 +502,14 @@ function mostrarAreaLogada() {
     const usuario = localStorage.getItem("usuario");
     const tipo = localStorage.getItem("tipo");
 
-    if (!usuario) {
+    if (!usuario || !tipo) {
         alert("Você precisa fazer login.");
-        mostrarLogin();
+        logout();
         return;
     }
 
     esconderMenu();
 
-    // PROFESSOR / ADMIN
     if (tipo === "admin") {
         trocarConteudo(`
         <section class="dashboard fade-up">
@@ -452,6 +523,7 @@ function mostrarAreaLogada() {
                 <div class="dash-card" onclick="editarAulaExperimental()">📅 Aula Experimental</div>
                 <div class="dash-card" onclick="verAgendamentosExperimental()">📋 Ver Agendamentos</div>
                 <div class="dash-card" onclick="verAlunosAdmin()">👥 Ver Alunos</div>
+                <div class="dash-card" onclick="editarCredenciaisAdmin()">🔐 Credenciais do Professor</div>
             </div>
 
             <button onclick="logout()" class="btn-sair">Sair</button>
@@ -460,7 +532,6 @@ function mostrarAreaLogada() {
         return;
     }
 
-    // ALUNO
     trocarConteudo(`
     <section class="dashboard fade-up">
         <h2>🔥 Área do Aluno</h2>
@@ -599,94 +670,117 @@ function mostrarMenu() {
     }
 }
 
-function logout() {
+// Função logout
+async function logout() {
+    try {
+        await fetch("/logout", {
+            method: "POST"
+        });
+    } catch (erro) {
+        console.error("Erro ao fazer logout no servidor:", erro);
+    }
+
     localStorage.removeItem("usuario");
     localStorage.removeItem("tipo");
+
     mostrarMenu();
     mostrarInicio();
 }
 
-// Função editar aula experimental
-async function editarAulaExperimental() {
-    let conteudoTextarea = `[
-  {"modalidade":"Street Workout","data":"2026-03-25","horario":"19:00","vagas":3},
-  {"modalidade":"Street Workout","data":"2026-03-25","horario":"20:00","vagas":0},
-  {"modalidade":"Calistenia","data":"2026-03-27","horario":"19:00","vagas":2}
-]`;
-
-    try {
-        const resposta = await fetch("/aula-experimental");
-        const dados = await resposta.json();
-
-        if (dados && dados.length > 0) {
-            conteudoTextarea = JSON.stringify(dados, null, 2);
-        }
-    } catch (erro) {}
-
-    trocarConteudo(`
-    <section class="fade-up">
-        <h2>📅 Editar Aula Experimental</h2>
-        <p>Cadastre no formato JSON:</p>
-
-        <textarea id="dadosAulaExperimental" rows="12" style="width:100%">${conteudoTextarea}</textarea>
-
-        <br><br>
-        <button onclick="salvarAulaExperimental()">Salvar</button>
-        <button onclick="mostrarAreaLogada()" class="btn-voltar">⬅ Voltar</button>
-    </section>
-    `);
+// Função filtrar aula experimental professor
+async function filtrarAulaExperimentalProfessor(modalidade) {
+    estadoAulaExperimentalAdmin.filtroModalidade = modalidade;
+    await atualizarPainelAulaExperimentalAdmin(true);
 }
 
-// Função salvar aula experimental
-async function salvarAulaExperimental() {
-    try {
-        const texto = document.getElementById("dadosAulaExperimental").value;
-        const aulas = JSON.parse(texto);
 
-        const resposta = await fetch("/salvar-aula-experimental", {
-            method: "POST",
-            headers: {
-                "Content-Type": "application/json"
-            },
-            body: JSON.stringify({ aulas })
+
+//Função atualizar painel aula experimental admin
+async function atualizarPainelAulaExperimentalAdmin(maneterPainelDia = true) {
+    try {
+        const idsAnimados = [
+            "filtroBotoesAdmin",
+            "calendarioAdminWrapper",
+            "listaAulasAdmin"
+        ];
+
+        animarAtualizacaoAdmin(idsAnimados);
+
+        const resposta = await fetch("/aula-experimental");
+        const aulas = await resposta.json();
+
+        let aulasFiltradas = [...aulas];
+
+        if (estadoAulaExperimentalAdmin.filtroModalidade) {
+            aulasFiltradas = aulasFiltradas.filter(
+                a => a.modalidade === estadoAulaExperimentalAdmin.filtroModalidade
+            );
+        }
+
+        const [ano, mes] = estadoAulaExperimentalAdmin.anoMes.split("-").map(Number);
+
+        const primeiroDia = new Date(ano, mes - 1, 1);
+        const ultimoDia = new Date(ano, mes, 0);
+        const diasNoMes = ultimoDia.getDate();
+        const inicioSemana = primeiroDia.getDay();
+
+        const aulasMes = aulasFiltradas.filter(a => a.data.startsWith(estadoAulaExperimentalAdmin.anoMes));
+
+        const mapa = {};
+        aulasMes.forEach(a => {
+            if (!mapa[a.data]) mapa[a.data] = [];
+            mapa[a.data].push(a);
         });
 
-        const msg = await resposta.text();
-        alert(msg);
+        renderizarFiltrosAdmin();
+        renderizarCalendarioAdmin(mapa, ano, mes, diasNoMes, inicioSemana);
+        renderizarListaAulasAdmin(aulasFiltradas);
+
+        finalizarAnimacaoAdmin(idsAnimados);
+
+        if (maneterPainelDia && estadoAulaExperimentalAdmin.diaSelecionado) {
+            await selecionarDiaAdmin(
+                estadoAulaExperimentalAdmin.diaSelecionado,
+                estadoAulaExperimentalAdmin.filtroModalidade,
+                false
+            );
+        }
     } catch (erro) {
-        alert("Erro ao salvar aula experimental. Verifique o JSON.");
+        alert("Erro ao atualizar painel de aula experimental.");
     }
 }
 
-// Função render calendario aula experimental
-function renderCalendarioAulaExperimental(aulas, modalidade) {
-    const hoje = new Date();
-    const ano = hoje.getFullYear();
-    const mes = hoje.getMonth();
+//Função renderizar Filtros admi
+function renderizarFiltrosAdmin() {
+    const filtro = estadoAulaExperimentalAdmin.filtroModalidade;
 
-    const primeiroDia = new Date(ano, mes, 1);
-    const ultimoDia = new Date(ano, mes + 1, 0);
+    document.getElementById("filtroBotoesAdmin").innerHTML = `
+        <button class="btn-filtro-admin ${filtro === "" ? "ativo" : ""}" onclick="filtrarAulaExperimentalProfessor('')">Todas</button>
+        <button class="btn-filtro-admin ${filtro === "Ginástica" ? "ativo" : ""}" onclick="filtrarAulaExperimentalProfessor('Ginástica')">Ginástica</button>
+        <button class="btn-filtro-admin ${filtro === "Calistenia" ? "ativo" : ""}" onclick="filtrarAulaExperimentalProfessor('Calistenia')">Calistenia</button>
+        <button class="btn-filtro-admin ${filtro === "Street Workout" ? "ativo" : ""}" onclick="filtrarAulaExperimentalProfessor('Street Workout')">Street Workout</button>
+        <button class="btn-filtro-admin ${filtro === "TAF" ? "ativo" : ""}" onclick="filtrarAulaExperimentalProfessor('TAF')">TAF</button>
+    `;
+}
 
-    const diasNoMes = ultimoDia.getDate();
-    const inicioSemana = primeiroDia.getDay();
-
-    const mapa = {};
-
-    aulas.forEach(a => {
-        if (!mapa[a.data]) {
-            mapa[a.data] = [];
-        }
-        mapa[a.data].push(a);
-    });
-
+//Função renderizar calendario admin
+function renderizarCalendarioAdmin(mapa, ano, mes, diasNoMes, inicioSemana) {
     let html = `
-    <section class="fade-up">
-        <h2>📅 Aula Experimental - ${modalidade}</h2>
-        <p>Escolha um dia disponível:</p>
+    <div class="bloco-calendario-premium">
+        <div class="admin-barra-mes">
+            <button class="btn-filtro-admin" onclick="mudarMesAdmin(-1)">⬅ Mês anterior</button>
+
+            <div class="admin-mes-label" id="mesAtualAdmin">
+                ${estadoAulaExperimentalAdmin.anoMes}
+            </div>
+
+            <button class="btn-filtro-admin" onclick="mudarMesAdmin(1)">Próximo mês ➡</button>
+        </div>
 
         <div class="legenda-calendario">
-            <span class="legenda-item"><span class="cor verde"></span> Disponível</span>
+            <span class="legenda-item"><span class="cor verde"></span> Com vagas</span>
             <span class="legenda-item"><span class="cor vermelho"></span> Lotado</span>
+            <span class="legenda-item"><span class="cor cinza"></span> Sem aula</span>
         </div>
 
         <div class="calendario">
@@ -702,19 +796,869 @@ function renderCalendarioAulaExperimental(aulas, modalidade) {
     }
 
     for (let dia = 1; dia <= diasNoMes; dia++) {
-        const data = `${ano}-${String(mes + 1).padStart(2, "0")}-${String(dia).padStart(2, "0")}`;
+        const data = `${ano}-${String(mes).padStart(2, "0")}-${String(dia).padStart(2, "0")}`;
+        const aulasDia = mapa[data] || [];
+
+        let classe = "sem-aula";
+        let titulo = "Sem aula";
+
+        if (aulasDia.length > 0) {
+            const totalVagas = aulasDia.reduce((soma, a) => soma + Number(a.vagas || 0), 0);
+            const temVaga = totalVagas > 0;
+            classe = temVaga ? "disponivel" : "lotado";
+            titulo = temVaga ? `${totalVagas} vaga(s)` : "Lotado";
+        }
+
+        const selecionado = estadoAulaExperimentalAdmin.diaSelecionado === data ? "dia-selecionado-admin" : "";
+
+        html += `
+        <div class="dia ${classe} ${selecionado}"
+             onclick="selecionarDiaAdmin('${data}', '${estadoAulaExperimentalAdmin.filtroModalidade}')"
+             title="${titulo}">
+             ${dia}
+        </div>
+        `;
+    }
+
+    html += `
+        </div>
+    </div>
+    `;
+
+    document.getElementById("calendarioAdminWrapper").innerHTML = html;
+}
+
+//Função renderizar lista aulas admin
+function renderizarListaAulasAdmin(aulasFiltradas) {
+    const listaEl = document.getElementById("listaAulasAdmin");
+
+    const ordenadas = [...aulasFiltradas].sort((a, b) => {
+        const dataA = `${a.data} ${a.horario}`;
+        const dataB = `${b.data} ${b.horario}`;
+        return dataA.localeCompare(dataB);
+    });
+
+    if (!ordenadas.length) {
+        listaEl.innerHTML = `<p style="text-align:center;">Nenhuma aula experimental cadastrada${estadoAulaExperimentalAdmin.filtroModalidade ? " para esta modalidade" : ""}.</p>`;
+        return;
+    }
+
+    let html = `<div class="cards-aula-admin">`;
+
+    ordenadas.forEach(a => {
+        html += `
+        <div class="card-aula-premium">
+            <h4>${a.modalidade}</h4>
+            <p><strong>Data:</strong> ${a.data}</p>
+            <p><strong>Horário:</strong> ${a.horario}</p>
+            <p><strong>Vagas:</strong> ${a.vagas}</p>
+
+            <div class="acoes-card-admin">
+                <button class="btn-acao-admin" onclick="abrirEdicaoAulaExperimental('${a._id}', '${a.modalidade}', '${a.data}', '${a.horario}', '${a.vagas}')">
+                    Editar
+                </button>
+                <button class="btn-acao-admin btn-excluir-admin" onclick="excluirAulaExperimental('${a._id}')">
+                    Excluir
+                </button>
+            </div>
+        </div>
+        `;
+    });
+
+    html += `</div>`;
+    listaEl.innerHTML = html;
+}
+
+//Função mudar mês admin
+async function mudarMesAdmin(direcao) {
+    const [ano, mes] = estadoAulaExperimentalAdmin.anoMes.split("-").map(Number);
+
+    const novaData = new Date(ano, mes - 1 + direcao, 1);
+    estadoAulaExperimentalAdmin.anoMes = `${novaData.getFullYear()}-${String(novaData.getMonth() + 1).padStart(2, "0")}`;
+
+    await atualizarPainelAulaExperimentalAdmin(true);
+}
+
+//Função selecionar dia admin
+async function selecionarDiaAdmin(data, modalidadeFiltro = "", scrollSuave = true) {
+    try {
+        estadoAulaExperimentalAdmin.diaSelecionado = data;
+
+        const resposta = await fetch("/aula-experimental");
+        const aulas = await resposta.json();
+
+        let aulasDia = aulas.filter(a => a.data === data);
+
+        if (modalidadeFiltro) {
+            aulasDia = aulasDia.filter(a => a.modalidade === modalidadeFiltro);
+        }
+
+        let html = `<div><h3>📌 Dia selecionado: ${data}</h3>`;
+
+        if (!aulasDia.length) {
+            html += `<p>Nenhuma aula cadastrada para este dia${modalidadeFiltro ? " nesta modalidade" : ""}.</p>`;
+        } else {
+            aulasDia.sort((a, b) => a.horario.localeCompare(b.horario));
+            html += `<div class="cards-aula-admin">`;
+
+            aulasDia.forEach(a => {
+                html += `
+                <div class="card-aula-premium">
+                    <h4>${a.modalidade}</h4>
+                    <p><strong>Horário:</strong> ${a.horario}</p>
+                    <p><strong>Vagas:</strong> ${a.vagas}</p>
+
+                    <div class="acoes-card-admin">
+                        <button class="btn-acao-admin" onclick="abrirEdicaoAulaExperimental('${a._id}', '${a.modalidade}', '${a.data}', '${a.horario}', '${a.vagas}')">Editar</button>
+                        <button class="btn-acao-admin btn-excluir-admin" onclick="excluirAulaExperimental('${a._id}')">Excluir</button>
+                    </div>
+                </div>
+                `;
+            });
+
+            html += `</div>`;
+        }
+
+        html += `
+            <hr class="linha-divisoria-admin">
+            <h4 style="text-align:center;">➕ Adicionar aula neste dia</h4>
+
+            <form onsubmit="adicionarAulaExperimentalDia(event, '${data}')" class="form-premium-admin">
+                <div class="form-grid-admin">
+                    <select id="novaModalidadeDia" required>
+                        <option value="">Escolha a modalidade</option>
+                        <option value="Ginástica">Ginástica</option>
+                        <option value="Calistenia">Calistenia</option>
+                        <option value="Street Workout">Street Workout</option>
+                        <option value="TAF">TAF</option>
+                    </select>
+
+                    <input type="time" id="novoHorarioDia" required>
+                    <input type="number" id="novasVagasDia" min="0" placeholder="Vagas" required>
+                </div>
+
+                <div style="text-align:center; margin-top:16px;">
+                    <button class="btn-acao-admin" type="submit">Adicionar neste dia</button>
+                </div>
+            </form>
+        </div>
+        `;
+
+        const painel = document.getElementById("painel-dia-admin");
+
+        painel.classList.add("atualizando");
+        painel.style.display = "block";
+
+        setTimeout(() => {
+        painel.innerHTML = html;
+        painel.classList.remove("atualizando");
+        painel.classList.add("entrou");
+
+         setTimeout(() => {
+        painel.classList.remove("entrou");
+        }, 300);
+
+    renderizarBordaDiaSelecionado();
+
+    if (scrollSuave) {
+        painel.scrollIntoView({ behavior: "smooth", block: "start" });
+    }
+}, 120);
+    } catch (erro) {
+        alert("Erro ao carregar o dia selecionado.");
+    }
+}
+
+
+
+
+
+
+//Função adicionar aula experimental
+async function adicionarAulaExperimental(event) {
+    event.preventDefault();
+
+    const modalidade = document.getElementById("novaModalidade").value;
+    const data = document.getElementById("novaDataAulaExperimental").value;
+    const horario = document.getElementById("novoHorarioAulaExperimental").value;
+    const vagas = document.getElementById("novasVagasAulaExperimental").value;
+
+    try {
+        const resposta = await fetch("/admin/aula-experimental", {
+            method: "POST",
+            headers: {
+                "Content-Type": "application/json"
+            },
+            body: JSON.stringify({ modalidade, data, horario, vagas })
+        });
+
+        const dados = await resposta.json();
+
+        if (!resposta.ok) {
+            alert(dados.erro || "Erro ao adicionar aula experimental.");
+            return;
+        }
+
+        alert(dados.mensagem);
+        editarAulaExperimental();
+    } catch (erro) {
+        alert("Erro ao adicionar aula experimental.");
+    }
+}
+
+function animarAtualizacaoAdmin(ids = []) {
+    ids.forEach(id => {
+        const el = document.getElementById(id);
+        if (!el) return;
+        el.classList.remove("entrou");
+        el.classList.add("admin-conteudo-suave", "atualizando");
+    });
+}
+
+function finalizarAnimacaoAdmin(ids = []) {
+    ids.forEach(id => {
+        const el = document.getElementById(id);
+        if (!el) return;
+        el.classList.remove("atualizando");
+        el.classList.add("entrou");
+
+        setTimeout(() => {
+            el.classList.remove("entrou");
+        }, 300);
+    });
+}
+
+async function editarAulaExperimental(filtroModalidade = "", anoMes = null) {
+    const hoje = new Date();
+
+    estadoAulaExperimentalAdmin.filtroModalidade = filtroModalidade || "";
+    estadoAulaExperimentalAdmin.anoMes =
+        anoMes || `${hoje.getFullYear()}-${String(hoje.getMonth() + 1).padStart(2, "0")}`;
+
+    if (!estadoAulaExperimentalAdmin.diaSelecionado) {
+        estadoAulaExperimentalAdmin.diaSelecionado = "";
+    }
+
+    trocarConteudo(`
+    <section class="fade-up painel-exp-admin">
+        <div class="admin-topo-premium">
+            <h2>📅 Gerenciar Aula Experimental</h2>
+            <p>Cadastre, filtre e gerencie as aulas experimentais com uma visualização mais organizada e profissional.</p>
+        </div>
+
+        <div class="form-premium-admin">
+            <h3>➕ Adicionar nova aula</h3>
+
+            <form onsubmit="adicionarAulaExperimental(event)">
+                <div class="form-grid-admin">
+                    <select id="novaModalidade" required>
+                        <option value="">Escolha a modalidade</option>
+                        <option value="Ginástica">Ginástica</option>
+                        <option value="Calistenia">Calistenia</option>
+                        <option value="Street Workout">Street Workout</option>
+                        <option value="TAF">TAF</option>
+                    </select>
+
+                    <input type="date" id="novaDataAulaExperimental" required>
+                    <input type="time" id="novoHorarioAulaExperimental" required>
+                    <input type="number" id="novasVagasAulaExperimental" min="0" placeholder="Vagas" required>
+                </div>
+
+                <div style="margin-top:16px; text-align:center;">
+                    <button class="btn-acao-admin" type="submit">Adicionar aula</button>
+                </div>
+            </form>
+        </div>
+
+        <div class="filtro-area-admin">
+            <h3>Filtrar por modalidade</h3>
+            <div class="filtro-botoes-admin admin-conteudo-suave" id="filtroBotoesAdmin"></div>
+        </div>
+
+        <div id="calendarioAdminWrapper" class="admin-conteudo-suave"></div>
+
+        <div id="painel-dia-admin" class="bloco-dia-admin admin-conteudo-suave" style="display:none;"></div>
+
+        <div id="form-edicao-aula" class="admin-conteudo-suave" style="margin-top:24px;"></div>
+
+        <hr class="linha-divisoria-admin">
+
+        <h3 style="text-align:center;">Aulas cadastradas</h3>
+        <div id="listaAulasAdmin" class="admin-conteudo-suave"></div>
+
+        <div style="text-align:center; margin-top:30px;">
+            <button onclick="mostrarAreaLogada()" class="btn-voltar-premium btn-filtro-admin">⬅ Voltar</button>
+        </div>
+    </section>
+    `, true, false);
+
+    await atualizarPainelAulaExperimentalAdmin(false);
+}
+
+async function atualizarPainelAulaExperimentalAdmin(manterPainelDia = true) {
+    try {
+        const idsAnimados = [
+            "filtroBotoesAdmin",
+            "calendarioAdminWrapper",
+            "listaAulasAdmin"
+        ];
+
+        animarAtualizacaoAdmin(idsAnimados);
+
+        const resposta = await fetch("/aula-experimental");
+        const aulas = await resposta.json();
+
+        let aulasFiltradas = [...aulas];
+
+        if (estadoAulaExperimentalAdmin.filtroModalidade) {
+            aulasFiltradas = aulasFiltradas.filter(
+                a => a.modalidade === estadoAulaExperimentalAdmin.filtroModalidade
+            );
+        }
+
+        const [ano, mes] = estadoAulaExperimentalAdmin.anoMes.split("-").map(Number);
+
+        const primeiroDia = new Date(ano, mes - 1, 1);
+        const ultimoDia = new Date(ano, mes, 0);
+        const diasNoMes = ultimoDia.getDate();
+        const inicioSemana = primeiroDia.getDay();
+
+        const aulasMes = aulasFiltradas.filter(a =>
+            a.data.startsWith(estadoAulaExperimentalAdmin.anoMes)
+        );
+
+        const mapa = {};
+        aulasMes.forEach(a => {
+            if (!mapa[a.data]) mapa[a.data] = [];
+            mapa[a.data].push(a);
+        });
+
+        renderizarFiltrosAdmin();
+        renderizarCalendarioAdmin(mapa, ano, mes, diasNoMes, inicioSemana);
+        renderizarListaAulasAdmin(aulasFiltradas);
+
+        finalizarAnimacaoAdmin(idsAnimados);
+
+        if (manterPainelDia && estadoAulaExperimentalAdmin.diaSelecionado) {
+            await selecionarDiaAdmin(
+                estadoAulaExperimentalAdmin.diaSelecionado,
+                estadoAulaExperimentalAdmin.filtroModalidade,
+                false
+            );
+        }
+    } catch (erro) {
+        alert("Erro ao atualizar painel de aula experimental.");
+        console.error(erro);
+    }
+}
+
+function renderizarFiltrosAdmin() {
+    const filtro = estadoAulaExperimentalAdmin.filtroModalidade;
+    const el = document.getElementById("filtroBotoesAdmin");
+    if (!el) return;
+
+    el.innerHTML = `
+        <button class="btn-filtro-admin ${filtro === "" ? "ativo" : ""}" onclick="filtrarAulaExperimentalProfessor('')">Todas</button>
+        <button class="btn-filtro-admin ${filtro === "Ginástica" ? "ativo" : ""}" onclick="filtrarAulaExperimentalProfessor('Ginástica')">Ginástica</button>
+        <button class="btn-filtro-admin ${filtro === "Calistenia" ? "ativo" : ""}" onclick="filtrarAulaExperimentalProfessor('Calistenia')">Calistenia</button>
+        <button class="btn-filtro-admin ${filtro === "Street Workout" ? "ativo" : ""}" onclick="filtrarAulaExperimentalProfessor('Street Workout')">Street Workout</button>
+        <button class="btn-filtro-admin ${filtro === "TAF" ? "ativo" : ""}" onclick="filtrarAulaExperimentalProfessor('TAF')">TAF</button>
+    `;
+}
+
+function renderizarCalendarioAdmin(mapa, ano, mes, diasNoMes, inicioSemana) {
+    const el = document.getElementById("calendarioAdminWrapper");
+    if (!el) return;
+
+    let html = `
+    <div class="bloco-calendario-premium">
+        <div class="admin-barra-mes">
+            <button class="btn-filtro-admin" onclick="mudarMesAdmin(-1)">⬅ Mês anterior</button>
+
+            <div class="admin-mes-label" id="mesAtualAdmin">
+                ${estadoAulaExperimentalAdmin.anoMes}
+            </div>
+
+            <button class="btn-filtro-admin" onclick="mudarMesAdmin(1)">Próximo mês ➡</button>
+        </div>
+
+        <div class="legenda-calendario">
+            <span class="legenda-item"><span class="cor verde"></span> Com vagas</span>
+            <span class="legenda-item"><span class="cor vermelho"></span> Lotado</span>
+            <span class="legenda-item"><span class="cor cinza"></span> Sem aula</span>
+        </div>
+
+        <div class="calendario">
+    `;
+
+    const nomesDias = ["Dom", "Seg", "Ter", "Qua", "Qui", "Sex", "Sáb"];
+    nomesDias.forEach(d => {
+        html += `<div class="dia-semana">${d}</div>`;
+    });
+
+    for (let i = 0; i < inicioSemana; i++) {
+        html += `<div class="dia vazio"></div>`;
+    }
+
+    for (let dia = 1; dia <= diasNoMes; dia++) {
+        const data = `${ano}-${String(mes).padStart(2, "0")}-${String(dia).padStart(2, "0")}`;
+        const aulasDia = mapa[data] || [];
+
+        let classe = "sem-aula";
+        let titulo = "Sem aula";
+
+        if (aulasDia.length > 0) {
+            const totalVagas = aulasDia.reduce((soma, a) => soma + Number(a.vagas || 0), 0);
+            const temVaga = totalVagas > 0;
+            classe = temVaga ? "disponivel" : "lotado";
+            titulo = temVaga ? `${totalVagas} vaga(s)` : "Lotado";
+        }
+
+        const selecionado = estadoAulaExperimentalAdmin.diaSelecionado === data ? "dia-selecionado-admin" : "";
+
+        html += `
+        <div class="dia ${classe} ${selecionado}"
+             onclick="selecionarDiaAdmin('${data}', '${estadoAulaExperimentalAdmin.filtroModalidade}')"
+             title="${titulo}">
+             ${dia}
+        </div>
+        `;
+    }
+
+    html += `</div></div>`;
+    el.innerHTML = html;
+}
+
+function renderizarListaAulasAdmin(aulasFiltradas) {
+    const listaEl = document.getElementById("listaAulasAdmin");
+    if (!listaEl) return;
+
+    const ordenadas = [...aulasFiltradas].sort((a, b) => {
+        const dataA = `${a.data} ${a.horario}`;
+        const dataB = `${b.data} ${b.horario}`;
+        return dataA.localeCompare(dataB);
+    });
+
+    if (!ordenadas.length) {
+        listaEl.innerHTML = `<p style="text-align:center;">Nenhuma aula experimental cadastrada${estadoAulaExperimentalAdmin.filtroModalidade ? " para esta modalidade" : ""}.</p>`;
+        return;
+    }
+
+    let html = `<div class="cards-aula-admin">`;
+
+    ordenadas.forEach(a => {
+        html += `
+        <div class="card-aula-premium">
+            <h4>${a.modalidade}</h4>
+            <p><strong>Data:</strong> ${a.data}</p>
+            <p><strong>Horário:</strong> ${a.horario}</p>
+            <p><strong>Vagas:</strong> ${a.vagas}</p>
+
+            <div class="acoes-card-admin">
+                <button class="btn-acao-admin" onclick="abrirEdicaoAulaExperimental('${a._id}', '${a.modalidade}', '${a.data}', '${a.horario}', '${a.vagas}')">Editar</button>
+                <button class="btn-acao-admin btn-excluir-admin" onclick="excluirAulaExperimental('${a._id}')">Excluir</button>
+            </div>
+        </div>
+        `;
+    });
+
+    html += `</div>`;
+    listaEl.innerHTML = html;
+}
+
+async function filtrarAulaExperimentalProfessor(modalidade) {
+    estadoAulaExperimentalAdmin.filtroModalidade = modalidade;
+    await atualizarPainelAulaExperimentalAdmin(true);
+}
+
+async function mudarMesAdmin(direcao) {
+    const [ano, mes] = estadoAulaExperimentalAdmin.anoMes.split("-").map(Number);
+    const novaData = new Date(ano, mes - 1 + direcao, 1);
+
+    estadoAulaExperimentalAdmin.anoMes =
+        `${novaData.getFullYear()}-${String(novaData.getMonth() + 1).padStart(2, "0")}`;
+
+    await atualizarPainelAulaExperimentalAdmin(true);
+}
+
+async function selecionarDiaAdmin(data, modalidadeFiltro = "", scrollSuave = true) {
+    try {
+        estadoAulaExperimentalAdmin.diaSelecionado = data;
+
+        const resposta = await fetch("/aula-experimental");
+        const aulas = await resposta.json();
+
+        let aulasDia = aulas.filter(a => a.data === data);
+
+        if (modalidadeFiltro) {
+            aulasDia = aulasDia.filter(a => a.modalidade === modalidadeFiltro);
+        }
+
+        let html = `<div><h3>📌 Dia selecionado: ${data}</h3>`;
+
+        if (!aulasDia.length) {
+            html += `<p>Nenhuma aula cadastrada para este dia${modalidadeFiltro ? " nesta modalidade" : ""}.</p>`;
+        } else {
+            aulasDia.sort((a, b) => a.horario.localeCompare(b.horario));
+            html += `<div class="cards-aula-admin">`;
+
+            aulasDia.forEach(a => {
+                html += `
+                <div class="card-aula-premium">
+                    <h4>${a.modalidade}</h4>
+                    <p><strong>Horário:</strong> ${a.horario}</p>
+                    <p><strong>Vagas:</strong> ${a.vagas}</p>
+
+                    <div class="acoes-card-admin">
+                        <button class="btn-acao-admin" onclick="abrirEdicaoAulaExperimental('${a._id}', '${a.modalidade}', '${a.data}', '${a.horario}', '${a.vagas}')">Editar</button>
+                        <button class="btn-acao-admin btn-excluir-admin" onclick="excluirAulaExperimental('${a._id}')">Excluir</button>
+                    </div>
+                </div>
+                `;
+            });
+
+            html += `</div>`;
+        }
+
+        html += `
+            <hr class="linha-divisoria-admin">
+            <h4 style="text-align:center;">➕ Adicionar aula neste dia</h4>
+
+            <form onsubmit="adicionarAulaExperimentalDia(event, '${data}')" class="form-premium-admin">
+                <div class="form-grid-admin">
+                    <select id="novaModalidadeDia" required>
+                        <option value="">Escolha a modalidade</option>
+                        <option value="Ginástica">Ginástica</option>
+                        <option value="Calistenia">Calistenia</option>
+                        <option value="Street Workout">Street Workout</option>
+                        <option value="TAF">TAF</option>
+                    </select>
+
+                    <input type="time" id="novoHorarioDia" required>
+                    <input type="number" id="novasVagasDia" min="0" placeholder="Vagas" required>
+                </div>
+
+                <div style="text-align:center; margin-top:16px;">
+                    <button class="btn-acao-admin" type="submit">Adicionar neste dia</button>
+                </div>
+            </form>
+        </div>
+        `;
+
+        const painel = document.getElementById("painel-dia-admin");
+        if (!painel) return;
+
+        painel.classList.add("atualizando");
+        painel.style.display = "block";
+
+        setTimeout(() => {
+            painel.innerHTML = html;
+            painel.classList.remove("atualizando");
+            painel.classList.add("entrou");
+
+            setTimeout(() => {
+                painel.classList.remove("entrou");
+            }, 300);
+
+            renderizarBordaDiaSelecionado();
+
+            if (scrollSuave) {
+                painel.scrollIntoView({ behavior: "smooth", block: "start" });
+            }
+        }, 120);
+    } catch (erro) {
+        alert("Erro ao carregar o dia selecionado.");
+        console.error(erro);
+    }
+}
+
+function renderizarBordaDiaSelecionado() {
+    document.querySelectorAll(".calendario .dia").forEach(el => {
+        el.classList.remove("dia-selecionado-admin");
+    });
+
+    const dataSelecionada = estadoAulaExperimentalAdmin.diaSelecionado;
+    if (!dataSelecionada) return;
+
+    const diaSelecionado = Number(dataSelecionada.split("-")[2]);
+    const dias = Array.from(document.querySelectorAll(".calendario .dia"))
+        .filter(el => !el.classList.contains("vazio"));
+
+    let contador = 1;
+    for (const el of dias) {
+        if (contador === diaSelecionado) {
+            el.classList.add("dia-selecionado-admin");
+            break;
+        }
+        contador++;
+    }
+}
+
+async function adicionarAulaExperimental(event) {
+    event.preventDefault();
+
+    const modalidade = document.getElementById("novaModalidade").value;
+    const data = document.getElementById("novaDataAulaExperimental").value;
+    const horario = document.getElementById("novoHorarioAulaExperimental").value;
+    const vagas = document.getElementById("novasVagasAulaExperimental").value;
+
+    try {
+        const resposta = await fetch("/admin/aula-experimental", {
+            method: "POST",
+            headers: {
+                "Content-Type": "application/json"
+            },
+            body: JSON.stringify({ modalidade, data, horario, vagas })
+        });
+
+        const dados = await resposta.json();
+
+        if (!resposta.ok) {
+            alert(dados.erro || "Erro ao adicionar aula experimental.");
+            return;
+        }
+
+        alert(dados.mensagem);
+        await atualizarPainelAulaExperimentalAdmin(true);
+    } catch (erro) {
+        alert("Erro ao adicionar aula experimental.");
+        console.error(erro);
+    }
+}
+
+async function adicionarAulaExperimentalDia(event, data) {
+    event.preventDefault();
+
+    const modalidade = document.getElementById("novaModalidadeDia").value;
+    const horario = document.getElementById("novoHorarioDia").value;
+    const vagas = document.getElementById("novasVagasDia").value;
+
+    try {
+        const resposta = await fetch("/admin/aula-experimental", {
+            method: "POST",
+            headers: {
+                "Content-Type": "application/json"
+            },
+            body: JSON.stringify({ modalidade, data, horario, vagas })
+        });
+
+        const dados = await resposta.json();
+
+        if (!resposta.ok) {
+            alert(dados.erro || "Erro ao adicionar aula.");
+            return;
+        }
+
+        alert(dados.mensagem);
+
+        await atualizarPainelAulaExperimentalAdmin(true);
+        await selecionarDiaAdmin(data, estadoAulaExperimentalAdmin.filtroModalidade, false);
+    } catch (erro) {
+        alert("Erro ao adicionar aula neste dia.");
+        console.error(erro);
+    }
+}
+
+async function excluirAulaExperimental(id) {
+    const confirmar = confirm("Deseja realmente excluir esta aula experimental?");
+    if (!confirmar) return;
+
+    try {
+        const resposta = await fetch(`/admin/aula-experimental/${id}`, {
+            method: "DELETE"
+        });
+
+        const dados = await resposta.json();
+
+        if (!resposta.ok) {
+            alert(dados.erro || "Erro ao excluir aula experimental.");
+            return;
+        }
+
+        alert(dados.mensagem);
+        await atualizarPainelAulaExperimentalAdmin(true);
+    } catch (erro) {
+        alert("Erro ao excluir aula experimental.");
+        console.error(erro);
+    }
+}
+
+function abrirEdicaoAulaExperimental(id, modalidade, data, horario, vagas) {
+    const area = document.getElementById("form-edicao-aula");
+    if (!area) return;
+
+    area.classList.add("atualizando");
+
+    setTimeout(() => {
+        area.innerHTML = `
+        <div class="form-premium-admin">
+            <h3>✏️ Editar Aula Experimental</h3>
+
+            <form onsubmit="salvarEdicaoAulaExperimental(event, '${id}')">
+                <div class="form-grid-admin">
+                    <select id="editarModalidadeAulaExperimental" required>
+                        <option value="Ginástica" ${modalidade === "Ginástica" ? "selected" : ""}>Ginástica</option>
+                        <option value="Calistenia" ${modalidade === "Calistenia" ? "selected" : ""}>Calistenia</option>
+                        <option value="Street Workout" ${modalidade === "Street Workout" ? "selected" : ""}>Street Workout</option>
+                        <option value="TAF" ${modalidade === "TAF" ? "selected" : ""}>TAF</option>
+                    </select>
+
+                    <input type="date" id="editarDataAulaExperimental" value="${data}" required>
+                    <input type="time" id="editarHorarioAulaExperimental" value="${horario}" required>
+                    <input type="number" id="editarVagasAulaExperimental" value="${vagas}" min="0" required>
+                </div>
+
+                <div class="acoes-card-admin" style="justify-content:center; margin-top:18px;">
+                    <button class="btn-acao-admin" type="submit">Salvar alterações</button>
+                    <button class="btn-acao-admin btn-secundario-admin" type="button" onclick="fecharEdicaoAulaExperimental()">Cancelar</button>
+                </div>
+            </form>
+        </div>
+        `;
+
+        area.classList.remove("atualizando");
+        area.classList.add("entrou");
+
+        setTimeout(() => {
+            area.classList.remove("entrou");
+        }, 300);
+
+        area.scrollIntoView({ behavior: "smooth", block: "start" });
+    }, 120);
+}
+
+function fecharEdicaoAulaExperimental() {
+    const area = document.getElementById("form-edicao-aula");
+    if (area) {
+        area.innerHTML = "";
+    }
+}
+
+async function salvarEdicaoAulaExperimental(event, id) {
+    event.preventDefault();
+
+    const modalidade = document.getElementById("editarModalidadeAulaExperimental").value;
+    const data = document.getElementById("editarDataAulaExperimental").value;
+    const horario = document.getElementById("editarHorarioAulaExperimental").value;
+    const vagas = document.getElementById("editarVagasAulaExperimental").value;
+
+    try {
+        const resposta = await fetch(`/admin/aula-experimental/${id}`, {
+            method: "PUT",
+            headers: {
+                "Content-Type": "application/json"
+            },
+            body: JSON.stringify({ modalidade, data, horario, vagas })
+        });
+
+        const dados = await resposta.json();
+
+        if (!resposta.ok) {
+            alert(dados.erro || "Erro ao atualizar aula experimental.");
+            return;
+        }
+
+        alert(dados.mensagem);
+        fecharEdicaoAulaExperimental();
+        await atualizarPainelAulaExperimentalAdmin(true);
+        await selecionarDiaAdmin(data, estadoAulaExperimentalAdmin.filtroModalidade, false);
+    } catch (erro) {
+        alert("Erro ao atualizar aula experimental.");
+        console.error(erro);
+    }
+}
+
+// Função render calendario aula experimental
+function renderCalendarioAulaExperimental(aulas, modalidade, anoMes = null) {
+    if (!aulas || aulas.length === 0) {
+        trocarConteudo(`
+        <section class="fade-up">
+            <h2>📅 Aula Experimental - ${modalidade}</h2>
+            <p>Nenhuma aula experimental cadastrada para esta modalidade.</p>
+            <button onclick="mostrarDetalheModalidade('${modalidade}')" class="btn-voltar">⬅ Voltar</button>
+        </section>
+        `);
+        return;
+    }
+
+    const mesesDisponiveis = [...new Set(aulas.map(a => a.data.slice(0, 7)))].sort();
+
+    if (!anoMes || !mesesDisponiveis.includes(anoMes)) {
+        anoMes = mesesDisponiveis[0];
+    }
+
+    const [ano, mes] = anoMes.split("-").map(Number);
+
+    const primeiroDia = new Date(ano, mes - 1, 1);
+    const ultimoDia = new Date(ano, mes, 0);
+
+    const diasNoMes = ultimoDia.getDate();
+    const inicioSemana = primeiroDia.getDay();
+
+    const aulasMes = aulas.filter(a => a.data.startsWith(anoMes));
+
+    const mapa = {};
+    aulasMes.forEach(a => {
+        if (!mapa[a.data]) {
+            mapa[a.data] = [];
+        }
+        mapa[a.data].push(a);
+    });
+
+    const indiceMesAtual = mesesDisponiveis.indexOf(anoMes);
+    const mesAnterior = indiceMesAtual > 0 ? mesesDisponiveis[indiceMesAtual - 1] : null;
+    const proximoMes = indiceMesAtual < mesesDisponiveis.length - 1 ? mesesDisponiveis[indiceMesAtual + 1] : null;
+
+    let html = `
+    <section class="fade-up">
+        <h2>📅 Aula Experimental - ${modalidade}</h2>
+        <p>Escolha um dia disponível:</p>
+
+        <div style="display:flex; justify-content:center; gap:10px; margin-bottom:20px; flex-wrap:wrap;">
+            ${mesAnterior ? `<button onclick="renderCalendarioAulaExperimental(window.aulasCalendarioAtual, '${modalidade}', '${mesAnterior}')">⬅ Mês anterior</button>` : ""}
+            <strong style="align-self:center;">${anoMes}</strong>
+            ${proximoMes ? `<button onclick="renderCalendarioAulaExperimental(window.aulasCalendarioAtual, '${modalidade}', '${proximoMes}')">Próximo mês ➡</button>` : ""}
+        </div>
+
+        <div class="legenda-calendario">
+            <span class="legenda-item"><span class="cor verde"></span> Disponível</span>
+            <span class="legenda-item"><span class="cor vermelho"></span> Lotado</span>
+            <span class="legenda-item"><span class="cor cinza"></span> Sem aula</span>
+        </div>
+
+        <div class="calendario">
+    `;
+
+    const nomesDias = ["Dom", "Seg", "Ter", "Qua", "Qui", "Sex", "Sáb"];
+    nomesDias.forEach(d => {
+        html += `<div class="dia-semana">${d}</div>`;
+    });
+
+    for (let i = 0; i < inicioSemana; i++) {
+        html += `<div class="dia vazio"></div>`;
+    }
+
+    for (let dia = 1; dia <= diasNoMes; dia++) {
+        const data = `${ano}-${String(mes).padStart(2, "0")}-${String(dia).padStart(2, "0")}`;
         const aulasDia = mapa[data] || [];
 
         let classe = "sem-aula";
         let onclick = "";
+        let titulo = "Sem aula";
 
         if (aulasDia.length > 0) {
-            const temVaga = aulasDia.some(a => a.vagas > 0);
+            const totalVagas = aulasDia.reduce((soma, a) => soma + Number(a.vagas || 0), 0);
+            const temVaga = totalVagas > 0;
+
             classe = temVaga ? "disponivel" : "lotado";
-            onclick = `onclick="mostrarHorariosDia('${data}', '${modalidade}')"`; 
+            titulo = temVaga ? `${totalVagas} vaga(s)` : "Lotado";
+
+            if (temVaga) {
+                onclick = `onclick="mostrarHorariosDia('${data}', '${modalidade}')"`;
+            }
         }
 
-        html += `<div class="dia ${classe}" ${onclick}>${dia}</div>`;
+        html += `<div class="dia ${classe}" ${onclick} title="${titulo}">${dia}</div>`;
     }
 
     html += `
@@ -725,6 +1669,7 @@ function renderCalendarioAulaExperimental(aulas, modalidade) {
     </section>
     `;
 
+    window.aulasCalendarioAtual = aulas;
     trocarConteudo(html);
 }
 
@@ -736,6 +1681,12 @@ async function mostrarHorariosDia(data, modalidade) {
     const filtradas = aulas.filter(a => a.data === data && a.modalidade === modalidade);
 
     let html = `<h3>Horários de ${data} - ${modalidade}</h3>`;
+
+    if (!filtradas.length) {
+        html += `<p>Nenhum horário encontrado para este dia.</p>`;
+        document.getElementById("horarios-dia").innerHTML = html;
+        return;
+    }
 
     filtradas.forEach(a => {
         if (a.vagas > 0) {
@@ -935,13 +1886,14 @@ window.addEventListener("load", () => {
 // Auto login
 window.onload = function() {
     const usuario = localStorage.getItem("usuario");
+    const tipo = localStorage.getItem("tipo");
 
-    if (usuario) {
+    if (usuario && tipo) {
         mostrarAreaLogada();
     } else {
         mostrarInicio();
     }
-}; 
+};
 
 // Função rolar para conteudo
 function rolarParaConteudo() {
@@ -1113,4 +2065,69 @@ function filtrarAlunosAdmin() {
             card.style.display = "none";
         }
     });
+}
+
+async function editarCredenciaisAdmin() {
+    try {
+        const resposta = await fetch("/admin/credenciais");
+        const admin = await resposta.json();
+
+        if (!resposta.ok) {
+            alert(admin.erro || "Erro ao carregar credenciais do professor.");
+            return;
+        }
+
+        trocarConteudo(`
+        <section class="fade-up">
+            <h2>🔐 Credenciais do Professor</h2>
+
+            <form onsubmit="salvarCredenciaisAdmin(event)">
+                <input type="text" id="adminNome" value="${admin.nome || ""}" placeholder="Nome do professor" required>
+                <input type="email" id="adminEmail" value="${admin.email || ""}" placeholder="Email" required>
+                <input type="text" id="adminTelefone" value="${admin.telefone || ""}" placeholder="Telefone" required>
+                <input type="password" id="adminSenha" placeholder="Nova senha (deixe vazio para não alterar)">
+                <button type="submit">Salvar credenciais</button>
+            </form>
+
+            <button onclick="mostrarAreaLogada()" class="btn-voltar">⬅ Voltar</button>
+        </section>
+        `);
+    } catch (erro) {
+        alert("Erro ao carregar credenciais do professor.");
+    }
+}
+
+// Função Salvar credenciais admn
+async function salvarCredenciaisAdmin(event) {
+    event.preventDefault();
+
+    const nome = document.getElementById("adminNome").value.trim();
+    const email = document.getElementById("adminEmail").value.trim().toLowerCase();
+    const telefone = document.getElementById("adminTelefone").value.trim();
+    const senha = document.getElementById("adminSenha").value;
+
+    try {
+        const resposta = await fetch("/admin/credenciais", {
+            method: "PUT",
+            headers: {
+                "Content-Type": "application/json"
+            },
+            body: JSON.stringify({ nome, email, telefone, senha })
+        });
+
+        const dados = await resposta.json();
+
+        if (!resposta.ok) {
+            alert(dados.erro || "Erro ao salvar credenciais.");
+            return;
+        }
+
+        localStorage.setItem("usuario", dados.admin.email);
+        localStorage.setItem("tipo", "admin");
+
+        alert(dados.mensagem);
+        mostrarAreaLogada();
+    } catch (erro) {
+        alert("Erro ao atualizar credenciais do professor.");
+    }
 }
