@@ -257,7 +257,7 @@ app.delete("/admin/aula-experimental/:id", verificarAdmin, async (req, res) => {
     }
 });
 
-app.put("/admin/aula-experimental/:id", async (req, res) => {
+app.put("/admin/aula-experimental/:id", verificarAdmin, async (req, res) => {
     try {
         const modalidade = (req.body.modalidade || "").trim();
         const data = (req.body.data || "").trim();
@@ -377,10 +377,18 @@ app.post("/login", async (req, res) => {
             });
         }
 
+        req.session.usuario = {
+            id: usuario._id,
+            email: usuario.email,
+            tipo: usuario.tipo,
+            nome: usuario.nome
+        };
+
         res.json({
             sucesso: true,
             email: usuario.email,
-            tipo: usuario.tipo
+            tipo: usuario.tipo,
+            nome: usuario.nome
         });
     } catch (erro) {
         res.status(500).json({
@@ -391,7 +399,7 @@ app.post("/login", async (req, res) => {
 });
 
 // Salvar horários
-app.post("/salvar-horarios", async (req, res) => {
+app.post("/salvar-horarios",verificarAdmin, async (req, res) => {
     await Horario.deleteMany();
 
     const horarios = req.body.horarios;
@@ -429,7 +437,7 @@ app.get("/aula-experimental", async (req, res) => {
 });
 
 // Agendamentos da aula experimental
-app.get("/agendamentos-aula-experimental", async (req, res) => {
+app.get("/agendamentos-aula-experimental",verificarAdmin, async (req, res) => {
     const agendamentos = await AgendamentoExperimental.find();
     res.json(agendamentos);
 });
@@ -483,7 +491,7 @@ app.get("/painel-teste", async (req, res) => {
 });
 
 // Listar usuários
-app.get("/admin/usuarios", async (req, res) => {
+app.get("/admin/usuarios",verificarAdmin, async (req, res) => {
     try {
         const usuarios = await Usuario.find({ tipo: { $ne: "admin" } }, "-senha");
         res.json(usuarios);
@@ -493,7 +501,7 @@ app.get("/admin/usuarios", async (req, res) => {
 });
 
 // Buscar usuário por ID
-app.get("/admin/usuarios/:id", async (req, res) => {
+app.get("/admin/usuarios/:id",verificarAdmin, async (req, res) => {
     try {
         const usuario = await Usuario.findById(req.params.id, "-senha");
 
@@ -508,7 +516,7 @@ app.get("/admin/usuarios/:id", async (req, res) => {
 });
 
 // Editar usuário
-app.put("/admin/usuarios/:id", async (req, res) => {
+app.put("/admin/usuarios/:id",verificarAdmin, async (req, res) => {
     try {
         const usuario = await Usuario.findById(req.params.id);
 
@@ -532,7 +540,7 @@ app.put("/admin/usuarios/:id", async (req, res) => {
 });
 
 // Excluir usuário
-app.delete("/admin/usuarios/:id", async (req, res) => {
+app.delete("/admin/usuarios/:id",verificarAdmin, async (req, res) => {
     try {
         const usuario = await Usuario.findById(req.params.id);
 
