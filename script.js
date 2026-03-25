@@ -693,8 +693,6 @@ async function filtrarAulaExperimentalProfessor(modalidade) {
     await atualizarPainelAulaExperimentalAdmin(true);
 }
 
-
-
 //Função atualizar painel aula experimental admin
 async function atualizarPainelAulaExperimentalAdmin(maneterPainelDia = true) {
     try {

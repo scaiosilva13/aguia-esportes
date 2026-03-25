@@ -362,30 +362,31 @@ app.post("/login", async (req, res) => {
         const usuario = await Usuario.findOne({ email });
 
         if (!usuario) {
-            return res.status(401).json({ erro: "Usuário inválido" });
+            return res.status(401).json({
+                sucesso: false,
+                erro: "Usuário inválido"
+            });
         }
 
-        const senhaValida = await bcrypt.compare(senha, usuario.senha);
+        const senhaCorreta = await bcrypt.compare(senha, usuario.senha);
 
-        if (!senhaValida) {
-            return res.status(401).json({ erro: "Senha inválida" });
+        if (!senhaCorreta) {
+            return res.status(401).json({
+                sucesso: false,
+                erro: "Senha inválida"
+            });
         }
-
-        req.session.usuario = {
-            id: usuario._id,
-            email: usuario.email,
-            tipo: usuario.tipo,
-            nome: usuario.nome
-        };
 
         res.json({
             sucesso: true,
             email: usuario.email,
-            tipo: usuario.tipo,
-            nome: usuario.nome
+            tipo: usuario.tipo
         });
     } catch (erro) {
-        res.status(500).json({ erro: "Erro ao fazer login." });
+        res.status(500).json({
+            sucesso: false,
+            erro: "Erro ao fazer login."
+        });
     }
 });
 
